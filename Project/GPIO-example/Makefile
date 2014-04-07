@@ -48,15 +48,15 @@ BIN=$(CP) -O ihex
 #
 # HSE_VALUE sets the value of the HSE clock, 8MHz in this case 
 
-DEFS = -DUSE_STDPERIPH_DRIVER -DSTM32F10X_MD_VL -DHSE_VALUE=8000000
-STARTUP = ../../Libraries/CMSIS/CM3/DeviceSupport/ST/STM32F10x/startup/gcc_ride7/startup_stm32f10x_md_vl.s
+DEFS = -DUSE_STDPERIPH_DRIVER -DSTM32F207XX -DHSE_VALUE=8000000
+STARTUP = ../../Libraries/CMSIS/CM3/DeviceSupport/ST/STM32F20x/startup/gcc/startup_stm32f207xx.s
 
 MCU = cortex-m3
 MCFLAGS = -mcpu=$(MCU) -mthumb -mlittle-endian -mthumb-interwork
 
-STM32_INCLUDES = -I../../Libraries/CMSIS/CM3/DeviceSupport/ST/STM32F10x/ \
+STM32_INCLUDES = -I../../Libraries/CMSIS/CM3/DeviceSupport/ST/STM32F20x/ \
 	-I../../Libraries/CMSIS/CM3/CoreSupport/ \
-	-I../../Libraries/STM32F10x_StdPeriph_Driver/inc/
+	-I../../Libraries/STM32F20x_StdPeriph_Driver/inc/ \
 
 OPTIMIZE       = -Os
 
@@ -64,32 +64,52 @@ CFLAGS	= $(MCFLAGS)  $(OPTIMIZE)  $(DEFS) -I. -I./ $(STM32_INCLUDES)  -Wl,-T,stm
 AFLAGS	= $(MCFLAGS) 
 
 SRC = main.c \
-	stm32f10x_it.c \
-	system_stm32f10x.c \
-	../../Libraries/STM32F10x_StdPeriph_Driver/src/misc.c \
-	../../Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_adc.c \
-	../../Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_bkp.c \
-	../../Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_can.c \
-	../../Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_cec.c \
-	../../Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_crc.c \
-	../../Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_dac.c \
-	../../Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_dbgmcu.c \
-	../../Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_dma.c \
-	../../Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_exti.c \
-	../../Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_flash.c \
-	../../Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_fsmc.c \
-	../../Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_gpio.c \
-	../../Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_i2c.c \
-	../../Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_iwdg.c \
-	../../Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_pwr.c \
-	../../Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_rcc.c \
-	../../Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_rtc.c \
-	../../Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_sdio.c \
-	../../Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_spi.c \
-	../../Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_tim.c \
-	../../Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_usart.c \
-	../../Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_wwdg.c
-
+	stm32f2xx_it.c \
+	system_stm32f2xx.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_adc.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_adc_ex.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_can.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_cortex.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_crc.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_cryp.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_dac.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_dac_ex \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_dcmi.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_dma.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_dma_ex \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_eth.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_flash.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_flash_ex.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_gpio.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_hash.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_hcd.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_i2c.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_i2s.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_irda.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_iwdg.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_msp_template.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_nand.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_nor.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_pccard.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_pcd.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_pwr.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_pwr_ex.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_rcc.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_rcc_ex.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_sd.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_smartcard.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_spi.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_sram.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_tim.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_tim_ex.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_uart.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_usart.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_wwdg.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_ll_fsmc.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_ll_sdmmc.c \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_ll_usb.c
+	
 OBJDIR = .
 OBJ = $(SRC:%.c=$(OBJDIR)/%.o) 
 OBJ += Startup.o
