@@ -48,7 +48,7 @@ BIN=$(CP) -O ihex
 #
 # HSE_VALUE sets the value of the HSE clock, 8MHz in this case 
 
-DEFS = -DUSE_STDPERIPH_DRIVER -DSTM32F207XX -DHSE_VALUE=8000000
+DEFS = -DUSE_STDPERIPH_DRIVER -DSTM32F207xx -DHSE_VALUE=8000000
 STARTUP = ../../Libraries/CMSIS/CM3/DeviceSupport/ST/STM32F20x/startup/gcc/startup_stm32f207xx.s
 
 MCU = cortex-m3
@@ -56,7 +56,7 @@ MCFLAGS = -mcpu=$(MCU) -mthumb -mlittle-endian -mthumb-interwork
 
 STM32_INCLUDES = -I../../Libraries/CMSIS/CM3/DeviceSupport/ST/STM32F20x/ \
 	-I../../Libraries/CMSIS/CM3/CoreSupport/ \
-	-I../../Libraries/STM32F20x_StdPeriph_Driver/inc/ \
+	-I../../Libraries/STM32F20x_StdPeriph_Driver/inc/
 
 OPTIMIZE       = -Os
 
@@ -74,10 +74,10 @@ SRC = main.c \
 	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_crc.c \
 	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_cryp.c \
 	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_dac.c \
-	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_dac_ex \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_dac_ex.c \
 	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_dcmi.c \
 	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_dma.c \
-	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_dma_ex \
+	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_dma_ex.c \
 	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_eth.c \
 	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_flash.c \
 	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_flash_ex.c \
@@ -110,6 +110,7 @@ SRC = main.c \
 	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_ll_sdmmc.c \
 	../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_ll_usb.c
 	
+	
 OBJDIR = .
 OBJ = $(SRC:%.c=$(OBJDIR)/%.o) 
 OBJ += Startup.o
@@ -120,7 +121,7 @@ $(TARGET).hex: $(EXECUTABLE)
 	$(CP) -O ihex $^ $@
 
 $(EXECUTABLE): $(SRC) $(STARTUP)
-	$(CC) $(CFLAGS) $^ -lm -lc -lnosys  -o $@
+	$(CC) $(CFLAGS) $^ -lm -lc -lnosys -o $@
 
 clean:
 	rm -f Startup.lst  $(TARGET)  $(TARGET).lst $(OBJ) $(AUTOGEN)  $(TARGET).out  $(TARGET).hex  $(TARGET).map \
