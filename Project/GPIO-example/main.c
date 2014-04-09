@@ -108,7 +108,7 @@ int main(void)
   
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct); 
 
-  /* -3- Toggle PG.6, PG.8, PI.9 and PC.7 IOs in an infinite loop */  
+  /* -3- Toggle PG.6, PG.8, PI.9 and PC.7 IOs in an infinite loop */
   while (1)
   {
     HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_6);
