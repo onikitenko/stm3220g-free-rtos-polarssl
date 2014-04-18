@@ -85,6 +85,13 @@
 extern uint32_t SystemCoreClock;
 #endif
 
+/* MAC address configuration. */
+#define configMAC_ADDR0		0x00
+#define configMAC_ADDR1		0x12
+#define configMAC_ADDR2		0x13
+#define configMAC_ADDR3		0x10
+#define configMAC_ADDR4		0x15
+#define configMAC_ADDR5		0x11
 
 #define configUSE_PREEMPTION      1
 #define configUSE_IDLE_HOOK     0

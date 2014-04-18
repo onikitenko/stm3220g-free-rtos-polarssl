@@ -60,7 +60,11 @@ STM32_INCLUDES = -I../../../Libraries/CMSIS/CM3/DeviceSupport/ST/STM32F20x/ \
 	-I../../../Utilities/STM32_EVAL/STM3220G_EVAL/ \
 	-I../FreeRTOS/src/portable \
 	-I../FreeRTOS/inc \
-	-I./include
+	-I./include \
+	-I../LwIP/port/arch/ \
+	-I../LwIP/include \
+	-I../LwIP/port \
+	-I../LwIP/include/ipv4
 
 OPTIMIZE       = -Os
 
@@ -70,6 +74,8 @@ AFLAGS	= $(MCFLAGS)
 SRC = main.c \
 	system_stm32f2xx.c \
 	stm32f2xx_hal_msp.c \
+	netip.c \
+	usart.c \
 	../../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal.c \
 	../../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_adc.c \
 	../../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_adc_ex.c \
@@ -119,7 +125,51 @@ SRC = main.c \
 	../FreeRTOS/src/tasks.c \
 	../FreeRTOS/src/timers.c \
 	../FreeRTOS/src/heap_1.c \
-	../FreeRTOS/src/portable/port.c 
+	../FreeRTOS/src/portable/port.c \
+	../LwIP/api/api_lib.c \
+	../LwIP/api/api_msg.c \
+	../LwIP/api/err.c \
+	../LwIP/api/netbuf.c \
+	../LwIP/api/netdb.c \
+	../LwIP/api/netifapi.c \
+	../LwIP/api/sockets.c \
+	../LwIP/api/tcpip.c \
+	../LwIP/core/ipv4/autoip.c \
+	../LwIP/core/ipv4/icmp.c \
+	../LwIP/core/ipv4/igmp.c \
+	../LwIP/core/ipv4/inet_chksum.c \
+	../LwIP/core/ipv4/inet.c \
+	../LwIP/core/ipv4/ip_addr.c \
+	../LwIP/core/ipv4/ip_frag.c \
+	../LwIP/core/ipv4/ip.c \
+	../LwIP/core/snmp/asn1_dec.c \
+	../LwIP/core/snmp/asn1_enc.c \
+	../LwIP/core/snmp/mib_structs.c \
+	../LwIP/core/snmp/mib2.c \
+	../LwIP/core/snmp/msg_in.c \
+	../LwIP/core/snmp/msg_out.c \
+	../LwIP/core/def.c \
+	../LwIP/core/dhcp.c \
+	../LwIP/core/dns.c \
+	../LwIP/core/init.c \
+	../LwIP/core/mem.c \
+	../LwIP/core/memp.c \
+	../LwIP/core/netif.c \
+	../LwIP/core/pbuf.c \
+	../LwIP/core/raw.c \
+	../LwIP/core/stats.c \
+	../LwIP/core/sys.c \
+	../LwIP/core/tcp_in.c \
+	../LwIP/core/tcp_out.c \
+	../LwIP/core/tcp.c \
+	../LwIP/core/timers.c \
+	../LwIP/core/udp.c \
+	../LwIP/netif/etharp.c \
+	../LwIP/netif/ethernetif.c \
+	../LwIP/netif/slipif.c \
+	../LwIP/port/arch/sys_arch.c \
+	../LwIP/port/bethsetup.c \
+	../LwIP/port/stm32x_ethernetif.c
 	
 	
 	

@@ -18,12 +18,16 @@
 #include "queue.h"
 #include "main.h"
 #include "stm32f2xx_hal.h"
-#include "stm32f2xx_hal_uart.h"
+#include "usart.h"
 
 static GPIO_InitTypeDef  GPIO_InitStruct;
 UART_HandleTypeDef UartHandle;
 static void SystemClock_Config(void);
 static void Error_Handler(void);
+
+extern void prvEthernetConfigureInterface(void * param);
+void EchoRequest( struct netconn *pxNetCon );
+extern portTASK_FUNCTION( EchoServer, pvParameters );
 
 void usart_putchar(char t);
 void usart_putstr(char *str);
@@ -86,6 +90,10 @@ void vFreeRTOSInitAll()
 	    Error_Handler();
 	  }
 
+	  tcpip_init( prvEthernetConfigureInterface, NULL );
+
+	  usart_putsr("tcpip_init\n");
+
 }
 
 void vLedTask (void *pvParameters)
@@ -105,8 +113,7 @@ void vLedTask (void *pvParameters)
         /* Insert delay 100 ms */
         vTaskDelay(100);
 
-        usart_putstr("ololo");
-        usart_putchar('t');
+        usart_putstr("ololo\n");
     }
     vTaskDelete(NULL);
 }
@@ -116,7 +123,8 @@ int main()
 {
     vFreeRTOSInitAll();
     xTaskCreate(vLedTask,(signed char*)"LedTask", configMINIMAL_STACK_SIZE,
-					NULL, tskIDLE_PRIORITY + 1, NULL);
+					NULL, tskIDLE_PRIORITY + 2, NULL);
+    sys_thread_new("ECHO",EchoServer,(void*)NULL, 1800, tskIDLE_PRIORITY+1); /// low priority task
     vTaskStartScheduler();
 }
 
@@ -172,17 +180,4 @@ static void Error_Handler(void)
   while (1)
   {
   }
-}
-
-void usart_putchar(char t)
-{
-	while (__HAL_UART_GET_FLAG(&UartHandle, UART_FLAG_TXE) == RESET);
-		HAL_UART_Transmit(&UartHandle, &t, 1, 100);
-};
-
-void usart_putstr(char *str)
-{
-	do {
-		usart_putchar(*str++);
-	} while(*str!='\0');
 }
