@@ -46,7 +46,7 @@
    
 /* Includes ------------------------------------------------------------------*/
 #include "stm322xg_eval.h"
-#include "..\Components\stmpe811\stmpe811.h"
+//#include "..\Components\stmpe811\stmpe811.h"
 
 
    

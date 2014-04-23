@@ -72,9 +72,11 @@ CFLAGS	= $(MCFLAGS)  $(OPTIMIZE)  $(DEFS) -I. -I./ $(STM32_INCLUDES)  -Wl,-T,stm
 AFLAGS	= $(MCFLAGS) 
 
 SRC = main.c \
+	app_ethernet.c \
+	ethernetif.c \
+	tcp_echoclient.c \
 	system_stm32f2xx.c \
 	stm32f2xx_hal_msp.c \
-	netip.c \
 	usart.c \
 	../../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal.c \
 	../../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_adc.c \
@@ -166,10 +168,10 @@ SRC = main.c \
 	../LwIP/core/udp.c \
 	../LwIP/netif/etharp.c \
 	../LwIP/netif/ethernetif.c \
-	../LwIP/netif/slipif.c \
-	../LwIP/port/arch/sys_arch.c \
-	../LwIP/port/bethsetup.c \
-	../LwIP/port/stm32x_ethernetif.c
+	../LwIP/netif/slipif.c 
+#	../LwIP/port/arch/sys_arch.c \
+#	../LwIP/port/bethsetup.c \
+#	../LwIP/port/stm32x_ethernetif.c
 	
 	
 	

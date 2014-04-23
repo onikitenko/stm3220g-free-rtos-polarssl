@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    stm32f2xx_hal_conf.h
+  * @file    LwIP/LwIP_TCP_Echo_Client/Inc/stm32f2xx_hal_conf.h
   * @author  MCD Application Team
   * @version V1.1.0
   * @date    13-March-2014
@@ -51,7 +51,7 @@
   * @brief This is the list of modules to be used in the HAL driver 
   */
 #define HAL_MODULE_ENABLED  
-/* #define HAL_ADC_MODULE_ENABLED */  
+#define HAL_ADC_MODULE_ENABLED 
 /* #define HAL_CAN_MODULE_ENABLED */  
 /* #define HAL_CRC_MODULE_ENABLED */  
 /* #define HAL_CRYP_MODULE_ENABLED */  
@@ -59,24 +59,24 @@
 /* #define HAL_DCMI_MODULE_ENABLED */ 
 #define HAL_DMA_MODULE_ENABLED
 /* #define HAL_DMA2D_MODULE_ENABLED */ 
-#define HAL_ETH_MODULE_ENABLED
+#define HAL_ETH_MODULE_ENABLED 
 #define HAL_FLASH_MODULE_ENABLED 
 /* #define HAL_NAND_MODULE_ENABLED */
 /* #define HAL_NOR_MODULE_ENABLED */
 /* #define HAL_PCCARD_MODULE_ENABLED */
 #define HAL_SRAM_MODULE_ENABLED
 /* #define HAL_SDRAM_MODULE_ENABLED */
-/* #define HAL_HASH_MODULE_ENABLED */ 
+/* #define HAL_HASH_MODULE_ENABLED */  
 #define HAL_GPIO_MODULE_ENABLED
 #define HAL_I2C_MODULE_ENABLED
-/* #define HAL_I2S_MODULE_ENABLED */   
+#define HAL_I2S_MODULE_ENABLED   
 /* #define HAL_IWDG_MODULE_ENABLED */ 
 /* #define HAL_LTDC_MODULE_ENABLED */ 
-#define HAL_PWR_MODULE_ENABLED 
+#define HAL_PWR_MODULE_ENABLED   
 #define HAL_RCC_MODULE_ENABLED 
 /* #define HAL_RNG_MODULE_ENABLED */   
 /* #define HAL_RTC_MODULE_ENABLED */
-/* #define HAL_SAI_MODULE_ENABLED */  
+/* #define HAL_SAI_MODULE_ENABLED */   
 /* #define HAL_SD_MODULE_ENABLED */  
 /* #define HAL_SPI_MODULE_ENABLED */   
 /* #define HAL_TIM_MODULE_ENABLED */   
@@ -360,8 +360,8 @@
   void assert_failed(uint8_t* file, uint32_t line);
 #else
   #define assert_param(expr) ((void)0)
-#endif /* USE_FULL_ASSERT */
-
+#endif /* USE_FULL_ASSERT */    
+    
 /**
   * @}
   */ 

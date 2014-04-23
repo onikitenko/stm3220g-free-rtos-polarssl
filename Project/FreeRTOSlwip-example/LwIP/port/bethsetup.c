@@ -237,19 +237,20 @@ portBASE_TYPE beth_init_eth(unsigned char* ucMACAddress) {
 	 just set everything manually at run time. */
 	ETH_StructInit(&xEthInit);
 	xEthInit.AutoNegotiation = ETH_AUTONEGOTIATION_ENABLE;
-	xEthInit.Watchdog = ETH_WATCHDOG_DISABLE;
-	xEthInit.Jabber = ETH_JABBER_DISABLE;
-	xEthInit.ReceiveOwn = ETH_RECEIVEOWN_DISABLE;
-	xEthInit.RetryTransmission = ETH_RETRYTRANSMISSION_DISABLE;
-	xEthInit.ReceiveAll = ETH_RECEIVEALL_ENABLE;
-	xEthInit.PassControlFrames
-			= ETH_PASSCONTROLFRAMES_FORWARDPASSEDADDRFILTER;
-	xEthInit.TxDMABurstLength = ETH_TXDMABURSTLENGTH_32BEAT;
-	xEthInit.RxDMABurstLength = ETH_RXDMABURSTLENGTH_32BEAT;
-	xEthInit.DMAArbitration = ETH_DMAARBITRATION_ROUNDROBIN_RXTX_2_1;
-	xEthInit.DropTCPIPChecksumErrorFrame = ETH_DROPTCPIPCHECKSUMERRORFRAME_ENABLE;
-	xEthInit.ReceiveStoreForward = ETH_RECEIVESTOREFORWARD_ENABLE;
-	xEthInit.TransmitStoreForward = ETH_TRANSMITSTOREFORWARD_ENABLE;
+	//xEthInit.Watchdog = ETH_WATCHDOG_DISABLE;
+	//xEthInit.Jabber = ETH_JABBER_DISABLE;
+	//xEthInit.ReceiveOwn = ETH_RECEIVEOWN_DISABLE;
+	//xEthInit.RetryTransmission = ETH_RETRYTRANSMISSION_DISABLE;
+	//xEthInit.ReceiveAll = ETH_RECEIVEALL_ENABLE;
+	//xEthInit.PassControlFrames
+	//		= ETH_PASSCONTROLFRAMES_FORWARDPASSEDADDRFILTER;
+
+	//xEthInit.TxDMABurstLength = ETH_TXDMABURSTLENGTH_32BEAT;
+	//xEthInit.RxDMABurstLength = ETH_RXDMABURSTLENGTH_32BEAT;
+	//xEthInit.DMAArbitration = ETH_DMAARBITRATION_ROUNDROBIN_RXTX_2_1;
+	//xEthInit.DropTCPIPChecksumErrorFrame = ETH_DROPTCPIPCHECKSUMERRORFRAME_ENABLE;
+	//xEthInit.ReceiveStoreForward = ETH_RECEIVESTOREFORWARD_ENABLE;
+	//xEthInit.TransmitStoreForward = ETH_TRANSMITSTOREFORWARD_ENABLE;
 	xReturn = ETH_Init(&xEthInit, PHY_ADDRESS);
 	/* Check a link was established. */
 	if (xReturn != pdFAIL) {
@@ -281,30 +282,30 @@ portBASE_TYPE beth_init_eth(unsigned char* ucMACAddress) {
 	return xReturn;
 }
 
-u32 ETH_GetCurrentTxBuffer(void)
+u32_t ETH_GetCurrentTxBuffer(void)
 {
 	/// return buffer address
 	return DMATxDescToSet->Buffer1Addr;
 }
 
-err_t ETH_TxPkt_ChainMode(u16 FrameLength)
+err_t ETH_TxPkt_ChainMode(u16_t FrameLength)
 {
 	  /* Check if the descriptor is owned by the ETHERNET DMA (when set) or CPU (when reset) */
 	  //while((DMATxDescToSet->Status & ETH_DMATxDesc_OWN) != (u32)RESET);
-	 if((DMATxDescToSet->Status & ETH_DMATxDesc_OWN) != (u32)RESET)
+	 if((DMATxDescToSet->Status & ETH_DMATXDESC_OWN) != (u32_t)RESET)
 		 return ERR_USE;
 
 	  /* Setting the Frame Length: bits[12:0] */
-	  DMATxDescToSet->ControlBufferSize = (FrameLength & ETH_DMATxDesc_TBS1);
+	  DMATxDescToSet->ControlBufferSize = (FrameLength & ETH_DMATXDESC_TBS1);
 
 	  /* Setting the last segment and first segment bits (in this case a frame is transmitted in one descriptor) */
-	  DMATxDescToSet->Status |= ETH_DMATxDesc_LS | ETH_DMATxDesc_FS;
+	  DMATxDescToSet->Status |= ETH_DMATXDESC_LS | ETH_DMATXDESC_FS;
 
 	  /* Set Own bit of the Tx descriptor Status: gives the buffer back to ETHERNET DMA */
-	  DMATxDescToSet->Status |= ETH_DMATxDesc_OWN;
+	  DMATxDescToSet->Status |= ETH_DMATXDESC_OWN;
 
 	  /* When Tx Buffer unavailable flag is set: clear it and resume transmission */
-	  if ((ETH->DMASR & ETH_DMASR_TBUS) != (u32)RESET)
+	  if ((ETH->DMASR & ETH_DMASR_TBUS) != (u32_t)RESET)
 	  {
 	    /* Clear TBUS ETHERNET DMA flag */
 	    ETH->DMASR = ETH_DMASR_TBUS;

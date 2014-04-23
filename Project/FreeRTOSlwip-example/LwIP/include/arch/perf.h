@@ -29,27 +29,10 @@
  * Author: Adam Dunkels <adam@sics.se>
  *
  */
-#ifndef __SYS_RTXC_H__
-#define __SYS_RTXC_H__
+#ifndef __PERF_H__
+#define __PERF_H__
 
-#include "FreeRTOS.h"
-#include "task.h"
-#include "queue.h"
-#include "semphr.h"
-#include "cc.h"
+#define PERF_START    /* null definition */
+#define PERF_STOP(x)  /* null definition */
 
-#define SYS_MBOX_NULL (xQueueHandle)0
-#define SYS_SEM_NULL  (xSemaphoreHandle)0
-
-typedef xSemaphoreHandle sys_sem_t;
-typedef xQueueHandle sys_mbox_t;
-typedef xTaskHandle sys_thread_t;
-typedef xSemaphoreHandle sys_mutex_t;
-typedef int sys_prot_t;
-
-/* Message queue constants. */
-#define archMESG_QUEUE_LENGTH	( 6 )
-#define archPOST_BLOCK_TIME_MS	( ( unsigned portLONG ) 10000 )
-
-#endif /* __SYS_RTXC_H__ */
-
+#endif /* __PERF_H__ */
