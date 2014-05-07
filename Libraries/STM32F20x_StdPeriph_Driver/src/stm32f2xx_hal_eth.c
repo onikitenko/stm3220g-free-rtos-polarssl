@@ -165,6 +165,7 @@ HAL_StatusTypeDef HAL_ETH_Init(ETH_HandleTypeDef *heth)
   /* Check the ETH peripheral state */
   if(heth == NULL)
   {
+	  usart_putstr("NULL\n");
     return HAL_ERROR;
   }
   
@@ -174,6 +175,8 @@ HAL_StatusTypeDef HAL_ETH_Init(ETH_HandleTypeDef *heth)
   assert_param(IS_ETH_CHECKSUM_MODE(heth->Init.ChecksumMode));
   assert_param(IS_ETH_MEDIA_INTERFACE(heth->Init.MediaInterface));  
   
+  usart_putstr("assert\n");
+
   if(heth->State == HAL_ETH_STATE_RESET)
   {
     /* Init the low level hardware : GPIO, CLOCK, NVIC. */
@@ -192,11 +195,12 @@ HAL_StatusTypeDef HAL_ETH_Init(ETH_HandleTypeDef *heth)
   /* After reset all the registers holds their respective reset values */
   (heth->Instance)->DMABMR |= ETH_DMABMR_SR;
   
+  usart_putstr("Wait for software reset");
   /* Wait for software reset */
   while (((heth->Instance)->DMABMR & ETH_DMABMR_SR) != (uint32_t)RESET)
   {
   }
-  
+  usart_putstr("  - done\n");
   /*-------------------------------- MAC Initialization ----------------------*/
   /* Get the ETHERNET MACMIIAR value */
   tmpreg = (heth->Instance)->MACMIIAR;
@@ -248,11 +252,14 @@ HAL_StatusTypeDef HAL_ETH_Init(ETH_HandleTypeDef *heth)
     return HAL_ERROR;
   }
   
+  usart_putstr("delay1");
   /* Delay to assure PHY reset */
   HAL_Delay(PHY_RESET_DELAY);
+  usart_putstr("after delay1");
   
   if((heth->Init).AutoNegotiation != ETH_AUTONEGOTIATION_DISABLE)
   {
+	  usart_putstr("We wait for linked status");
     /* We wait for linked status */
     do
     {
@@ -347,6 +354,7 @@ HAL_StatusTypeDef HAL_ETH_Init(ETH_HandleTypeDef *heth)
   }
   else /* AutoNegotiation Disable */
   {
+	usart_putstr("AutoNegotiation Disable");
     /* Check parameters */
     assert_param(IS_ETH_SPEED(heth->Init.Speed));
     assert_param(IS_ETH_DUPLEX_MODE(heth->Init.DuplexMode));
@@ -367,9 +375,10 @@ HAL_StatusTypeDef HAL_ETH_Init(ETH_HandleTypeDef *heth)
       /* Return HAL_ERROR */
       return HAL_ERROR;
     }  
-    
+    usart_putstr("delay2");
     /* Delay to assure PHY configuration */
     HAL_Delay(PHY_CONFIG_DELAY);
+    usart_putstr("after delay2");
   }
   
   /* Config MAC and DMA */

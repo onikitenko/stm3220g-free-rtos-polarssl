@@ -140,12 +140,16 @@ netif_add(struct netif *netif, ip_addr_t *ipaddr, ip_addr_t *netmask,
   static u8_t netifnum = 0;
 
   LWIP_ASSERT("No init function given", init != NULL);
+  if(init == NULL) {
+	  usart_putstr("ASSert");
+  }
 
   /* reset new interface configuration state */
   ip_addr_set_zero(&netif->ip_addr);
   ip_addr_set_zero(&netif->netmask);
   ip_addr_set_zero(&netif->gw);
   netif->flags = 0;
+  usart_putstr("ip addr zero");
 #if LWIP_DHCP
   /* netif not under DHCP control by default */
   netif->dhcp = NULL;
@@ -180,9 +184,10 @@ netif_add(struct netif *netif, ip_addr_t *ipaddr, ip_addr_t *netmask,
 #endif /* ENABLE_LOOPBACK && LWIP_LOOPBACK_MAX_PBUFS */
 
   netif_set_addr(netif, ipaddr, netmask, gw);
-
+  usart_putstr("netif_set_addr\n");
   /* call user specified initialization function for netif */
   if (init(netif) != ERR_OK) {
+	  usart_putstr("return NULL\n");
     return NULL;
   }
 
@@ -194,10 +199,13 @@ netif_add(struct netif *netif, ip_addr_t *ipaddr, ip_addr_t *netmask,
 #if LWIP_IGMP
   /* start IGMP processing */
   if (netif->flags & NETIF_FLAG_IGMP) {
+	  usart_putstr("igmp\n");
     igmp_start(netif);
+    usart_putstr("start\n");
   }
 #endif /* LWIP_IGMP */
 
+  usart_putstr("debug_print\n");
   LWIP_DEBUGF(NETIF_DEBUG, ("netif: added interface %c%c IP addr ",
     netif->name[0], netif->name[1]));
   ip_addr_debug_print(NETIF_DEBUG, ipaddr);
