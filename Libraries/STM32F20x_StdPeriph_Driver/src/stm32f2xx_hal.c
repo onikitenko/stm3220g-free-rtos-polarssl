@@ -281,12 +281,17 @@ uint32_t HAL_GetTick(void)
   */
 void HAL_Delay(__IO uint32_t Delay)
 {
-  uint32_t timingdelay;
-  
-  timingdelay = HAL_GetTick() + Delay;
-  while(HAL_GetTick() < timingdelay)
-  {
-  }
+//#ifdef configUSE_PREEMPTION
+//	  usart_putstr("vTaskDelay\n");
+	  vTaskDelay(Delay);
+//#else
+//  uint32_t timingdelay;
+//
+//  timingdelay = HAL_GetTick() + Delay;
+//  while(HAL_GetTick() < timingdelay)
+//  {
+//  }
+//#endif
 }
 
 /**
