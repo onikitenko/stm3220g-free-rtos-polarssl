@@ -105,13 +105,20 @@ void vFreeRTOSInitAll()
 	       - Set NVIC Group Priority to 4
 	       - Global MSP (MCU Support Package) initialization
 	     */
-	  HAL_Init();
+//	  HAL_Init();
+//
+//	  /* Configure the system clock to have a system clock = 120 Mhz */
+//	  SystemClock_Config();
+//
+//	  /* Configure the BSP */
+//	  BSP_Config();
+//
 
-	  /* Configure the system clock to have a system clock = 120 Mhz */
-	  SystemClock_Config();
+	  usart_putstr("starting tasks\n");
 
-	  /* Configure the BSP */
-	  BSP_Config();
+}
+
+void vLwIPTask (void *pvParameters) {
 
 	  /* Initilaize the LwIP stack */
 	  lwip_init();
@@ -122,11 +129,10 @@ void vFreeRTOSInitAll()
 	  /* Notify user about the netwoek interface config */
 	  User_notification(&gnetif);
 
-	  usart_putstr("tcpip_init\n");
+	  usart_putstr("tcp initialized\n");
 
-}
+	  //tcp_echoclient_connect();
 
-void vLwIPTask (void *pvParameters) {
 	while (1) {
     	/* Read a received packet from the Ethernet buffers and send it 
      	  to the lwIP for handling */
@@ -141,10 +147,10 @@ void vLedTask (void *pvParameters)
 {
     while(1)
     {
-        HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_6);
+        //HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_6);
         /* Insert delay 100 ms */
         vTaskDelay(100);
-        HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_8);
+        //HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_8);
         /* Insert delay 100 ms */
         vTaskDelay(100);
         HAL_GPIO_TogglePin(GPIOI, GPIO_PIN_9);
@@ -154,7 +160,7 @@ void vLedTask (void *pvParameters)
         /* Insert delay 100 ms */
         vTaskDelay(100);
 
-        usart_putstr("ololo\n");
+        //usart_putstr("ololo\n");
     }
     vTaskDelete(NULL);
 }
@@ -165,8 +171,7 @@ int main()
     vFreeRTOSInitAll();
     xTaskCreate(vLedTask,(signed char*)"LedTask", configMINIMAL_STACK_SIZE,
 					NULL, tskIDLE_PRIORITY + 2, NULL);
-
-    xTaskCreate(vLedTask,(signed char*)"LwIPTask", configMINIMAL_STACK_SIZE,
+    xTaskCreate(vLwIPTask,(signed char*)"LwIPTask", configMINIMAL_STACK_SIZE,
 					NULL, tskIDLE_PRIORITY + 1, NULL);
     vTaskStartScheduler();
 }
@@ -219,12 +224,13 @@ static void Netif_Config(void)
   IP4_ADDR(&netmask, NETMASK_ADDR0, NETMASK_ADDR1 , NETMASK_ADDR2, NETMASK_ADDR3);
   IP4_ADDR(&gw, GW_ADDR0, GW_ADDR1, GW_ADDR2, GW_ADDR3);
 
+  usart_putstr("IP4\n");
   /* add the network interface */
   netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &ethernet_input);
-
+  usart_putstr("netif_add\n");
   /*  Registers the default network interface */
   netif_set_default(&gnetif);
-
+  usart_putstr("netif_set_default\n");
   if (netif_is_link_up(&gnetif))
   {
     /* When the netif is fully configured this function must be called */
@@ -235,9 +241,10 @@ static void Netif_Config(void)
     /* When the netif link is down this function must be called */
     netif_set_down(&gnetif);
   }
-
+  usart_putstr("netif_set_up/down\n");
   /* Set the link callback function, this function is called on change of link status*/
   netif_set_link_callback(&gnetif, ethernetif_update_config);
+  usart_putstr("netif_set_link_callback\n");
 }
 
 /**

@@ -47,12 +47,14 @@ void User_notification(struct netif *netif)
   if (netif_is_up(netif))
   {
     /* Turn On LED 1 to indicate ETH and LwIP init success*/
-    BSP_LED_On(LED1);
+    //BSP_LED_On(LED1);
+	  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_6, GPIO_PIN_SET);
   }
   else
   {     
     /* Turn On LED 2 to indicate ETH and LwIP init error */
-    BSP_LED_On(LED2);
+    //BSP_LED_On(LED2);
+	  HAL_GPIO_WritePin(GPIOG, GPIO_PIN_8, GPIO_PIN_SET);
   } 
 }
 
@@ -78,16 +80,20 @@ void ethernetif_notify_conn_changed(struct netif *netif)
     /* When the netif is fully configured this function must be called.*/
     netif_set_up(netif);      
     
-    BSP_LED_Off(LED2);
-    BSP_LED_On(LED1);    
+    //BSP_LED_Off(LED2);
+    //BSP_LED_On(LED1);
+    HAL_GPIO_WritePin(GPIOG, GPIO_PIN_8, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOG, GPIO_PIN_6, GPIO_PIN_SET);
   }
   else
   {    
     /*  When the netif link is down this function must be called.*/
     netif_set_down(netif);
     
-    BSP_LED_Off(LED1);
-    BSP_LED_On(LED2);   
+    //BSP_LED_Off(LED1);
+    //BSP_LED_On(LED2);
+    HAL_GPIO_WritePin(GPIOG, GPIO_PIN_8, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOG, GPIO_PIN_6, GPIO_PIN_RESET);
   }
 }
 
