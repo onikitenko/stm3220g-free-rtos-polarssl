@@ -131,7 +131,7 @@ void vLwIPTask (void *pvParameters) {
 
 	  usart_putstr("tcp initialized\n");
 
-	  //tcp_echoclient_connect();
+	  tcp_polarclient_connect();
 
 	while (1) {
     	/* Read a received packet from the Ethernet buffers and send it 
@@ -172,7 +172,7 @@ int main()
     xTaskCreate(vLedTask,(signed char*)"LedTask", configMINIMAL_STACK_SIZE,
 					NULL, tskIDLE_PRIORITY + 2, NULL);
     xTaskCreate(vLwIPTask,(signed char*)"LwIPTask", configMINIMAL_STACK_SIZE,
-					NULL, tskIDLE_PRIORITY + 1, NULL);
+					NULL, tskIDLE_PRIORITY + 3, NULL);
     vTaskStartScheduler();
 }
 
@@ -261,7 +261,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
   else if (GPIO_Pin == GPIO_PIN_15)
   {
     /*connect to tcp server */
-    tcp_echoclient_connect();
+    tcp_polarclient_connect();
   }
 }
 

@@ -74,7 +74,7 @@ AFLAGS	= $(MCFLAGS)
 SRC = main.c \
 	app_ethernet.c \
 	ethernetif.c \
-	tcp_echoclient.c \
+	tcp_polarclient.c \
 	system_stm32f2xx.c \
 	stm32f2xx_hal_msp.c \
 	usart.c \
