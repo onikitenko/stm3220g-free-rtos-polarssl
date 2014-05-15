@@ -31,9 +31,18 @@
 #include "lwip/stats.h"
 #include "lwip/tcp.h"
 #include "lwip/memp.h"
+#include "FreeRTOS.h"
+#include "queue.h"
 #include "usart.h"
 #include <stdio.h>
 #include <string.h>
+#include "polarssl/config.h"
+#include "polarssl/net.h"
+#include "polarssl/ssl.h"
+#include "polarssl/entropy.h"
+#include "polarssl/ctr_drbg.h"
+#include "polarssl/error.h"
+#include "polarssl/certs.h"
 
 #if LWIP_TCP
 /* Private typedef -----------------------------------------------------------*/
@@ -47,6 +56,25 @@ __IO uint32_t message_count=0;
 u8_t   data[100];
 
 struct tcp_pcb *polarclient_pcb;
+
+/* Polar SSL Data */
+unsigned char buf[1024];
+const char *pers = "ssl_client1";
+entropy_context entropy;
+ctr_drbg_context ctr_drbg;
+ssl_context ssl;
+x509_crt cacert;
+xQueueHandle xLwIPQueue;
+#define GET_REQUEST "GET / HTTP/1.0\r\n\r\n"
+#define DEBUG_LEVEL 1
+
+static void my_debug( void *ctx, int level, const char *str )
+{
+    if( level < DEBUG_LEVEL )
+    {
+        usart_putstr( str );
+    }
+}
 
 
 /* ECHO protocol states */
@@ -75,10 +103,135 @@ static err_t tcp_polarclient_poll(void *arg, struct tcp_pcb *tpcb);
 static err_t tcp_polarclient_sent(void *arg, struct tcp_pcb *tpcb, u16_t len);
 static void tcp_polarclient_send(struct tcp_pcb *tpcb, struct polarclient * es);
 static err_t tcp_polarclient_connected(void *arg, struct tcp_pcb *tpcb, err_t err);
-
+static int tcp_wrapped_write( void *ctx, const unsigned char *buf, size_t len);
+static int tcp_wrapped_recv( void *ctx, unsigned char *buf, size_t len );
+err_t polarssl_init(void);
 /* Private functions ---------------------------------------------------------*/
 
+int tcp_wrapped_write( void *ctx, const unsigned char *buf, size_t len) {
+	return tcp_write(polarclient_pcb, (const void *)buf, (u16_t)len, 1);
+}
 
+int tcp_wrapped_recv( void *ctx, unsigned char *buf, size_t len) {
+	//TODO
+	int num_bytes = len;
+	return num_bytes;
+}
+
+err_t polarssl_init(void) {
+
+	err_t ret;
+	/*
+     * 0. Initialize the RNG and the session data
+     */
+    memset( &ssl, 0, sizeof( ssl_context ) );
+    x509_crt_init( &cacert );
+
+    usart_putstr( "\n  . Seeding the random number generator...\n" );
+
+    entropy_init( &entropy );
+    if( ( ret = ctr_drbg_init( &ctr_drbg, entropy_func, &entropy,
+                               (const unsigned char *) pers,
+                               strlen( pers ) ) ) != 0 )
+    {
+        //printf( " failed\n  ! ctr_drbg_init returned %d\n", ret );
+    	usart_putstr( "failed  ! ctr_drbg_init\n" );
+        goto exit;
+    }
+
+    xLwIPQueue = xQueueCreate( 1, sizeof( unsigned long ) );
+    if( xLwIPQueue == 0 )
+    {
+    	usart_putstr( "failed  initializing xLwIPQueue\n" );
+    }
+
+    usart_putstr( " ok\n" );
+
+    /*
+     * 0. Initialize certificates
+     */
+    usart_putstr( "  . Loading the CA root certificate ..." );
+
+#if defined(POLARSSL_CERTS_C)
+    ret = x509_crt_parse( &cacert, (const unsigned char *) test_ca_list,
+                          strlen( test_ca_list ) );
+#else
+    ret = 1;
+    usart_putstr("POLARSSL_CERTS_C not defined.");
+#endif
+
+    if( ret < 0 )
+    {
+    	usart_putstr( " failed\n  !  x509_crt_parse returned \n\n");
+        goto exit;
+    }
+
+    usart_putstr( " ok ( skipped)\n");
+
+    /*
+     * 1. Start the connection
+     */
+    usart_putstr( "  . Connecting to tcp/192.168.1.1/4433\n" );
+    tcp_polarclient_connect();
+
+    if( xLwIPQueue != 0 )
+    {
+    	unsigned long pxRxedMessage;
+        // Receive a message on the created queue.  Block for 10 ticks if a
+        // message is not immediately available.
+        if( xQueueReceive( xLwIPQueue, &( pxRxedMessage ), (portTickType) 10 ) )
+        {
+        	usart_putstr( " Received pxRxedMessage\n" );
+        }
+    }
+
+    usart_putstr( " ok\n" );
+
+    /*
+     * 2. Setup stuff
+     */
+    usart_putstr( "  . Setting up the SSL/TLS structure..." );
+
+    if( ( ret = ssl_init( &ssl ) ) != 0 )
+    {
+    	usart_putstr( " failed\n  ! ssl_init returned \n");
+        goto exit;
+    }
+
+    usart_putstr( " ok\n" );
+
+    ssl_set_endpoint( &ssl, SSL_IS_CLIENT );
+    /* OPTIONAL is not optimal for security,
+     * but makes interop easier in this simplified example */
+    ssl_set_authmode( &ssl, SSL_VERIFY_OPTIONAL );
+    ssl_set_ca_chain( &ssl, &cacert, NULL, "PolarSSL Server 1" );
+
+    ssl_set_rng( &ssl, ctr_drbg_random, &ctr_drbg );
+    ssl_set_dbg( &ssl, my_debug, 0 );
+    //TODO You will receive that pointer as the first argument to your callback..
+    //So just cast it back to the correct pointer and then you have your data..
+    ssl_set_bio( &ssl, tcp_wrapped_recv, polarclient_pcb,
+    		tcp_wrapped_write, polarclient_pcb );
+
+exit:
+
+#ifdef POLARSSL_ERROR_C
+    if( ret != 0 )
+    {
+        char error_buf[100];
+        polarssl_strerror( ret, error_buf, 100 );
+        printf("Last error was: %d - %s\n\n", ret, error_buf );
+    }
+#endif
+
+    x509_crt_free( &cacert );
+    ssl_free( &ssl );
+    entropy_free( &entropy );
+
+    memset( &ssl, 0, sizeof( ssl ) );
+
+    return( ret );
+}
 /**
 * @brief  Connects to the TCP polarssl server
 * @param  None
@@ -123,6 +276,8 @@ static err_t tcp_polarclient_connected(void *arg, struct tcp_pcb *tpcb, err_t er
   struct polarclient *es = NULL;
   
   usart_putstr("tcp_polarclient_connected\n");
+
+  //xQueuePost
 
   if (err == ERR_OK)   
   {
@@ -231,6 +386,9 @@ static err_t tcp_polarclient_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *
     /* Acknowledge data reception */
     tcp_recved(tpcb, p->tot_len);  
     
+    /* Call our wrapper callback */
+    tcp_wrapped_recv(tpcb, p->payload, p->tot_len);
+
     pbuf_free(p);
     tcp_polarclient_connection_close(tpcb, es);
     ret_err = ERR_OK;

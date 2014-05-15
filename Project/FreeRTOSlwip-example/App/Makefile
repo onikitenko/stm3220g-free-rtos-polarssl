@@ -64,12 +64,45 @@ STM32_INCLUDES = -I../../../Libraries/CMSIS/CM3/DeviceSupport/ST/STM32F20x/ \
 	-I../LwIP/port/arch/ \
 	-I../LwIP/include \
 	-I../LwIP/port \
-	-I../LwIP/include/ipv4
+	-I../LwIP/include/ipv4 \
+	-I../polarssl/include
 
 OPTIMIZE       = -Os
 
 CFLAGS	= $(MCFLAGS)  $(OPTIMIZE)  $(DEFS) -I. -I./ $(STM32_INCLUDES)  -Wl,-T,stm32_flash.ld
 AFLAGS	= $(MCFLAGS) 
+
+POLARSSL_PREFIX=../polarssl/library
+
+POLARSSL_SRC = \
+    	$(POLARSSL_PREFIX)/aes.c	$(POLARSSL_PREFIX)/aesni.c	$(POLARSSL_PREFIX)/arc4.c	\
+		$(POLARSSL_PREFIX)/asn1parse.c								\
+		$(POLARSSL_PREFIX)/asn1write.c $(POLARSSL_PREFIX)/base64.c	$(POLARSSL_PREFIX)/bignum.c		\
+		$(POLARSSL_PREFIX)/blowfish.c	$(POLARSSL_PREFIX)/camellia.c					\
+		$(POLARSSL_PREFIX)/certs.c		$(POLARSSL_PREFIX)/cipher.c	$(POLARSSL_PREFIX)/cipher_wrap.c	\
+		$(POLARSSL_PREFIX)/ctr_drbg.c	$(POLARSSL_PREFIX)/debug.c		$(POLARSSL_PREFIX)/des.c			\
+		$(POLARSSL_PREFIX)/dhm.c		$(POLARSSL_PREFIX)/ecdh.c		$(POLARSSL_PREFIX)/ecdsa.c			\
+		$(POLARSSL_PREFIX)/ecp.c		$(POLARSSL_PREFIX)/ecp_curves.c				\
+		$(POLARSSL_PREFIX)/entropy.c	$(POLARSSL_PREFIX)/entropy_poll.c				\
+		$(POLARSSL_PREFIX)/error.c		$(POLARSSL_PREFIX)/gcm.c		$(POLARSSL_PREFIX)/havege.c		\
+		$(POLARSSL_PREFIX)/hmac_drbg.c								\
+		$(POLARSSL_PREFIX)/md.c		$(POLARSSL_PREFIX)/md_wrap.c	$(POLARSSL_PREFIX)/md2.c			\
+		$(POLARSSL_PREFIX)/md4.c		$(POLARSSL_PREFIX)/md5.c						\
+		$(POLARSSL_PREFIX)/memory_buffer_alloc.c	$(POLARSSL_PREFIX)/net.c			\
+		$(POLARSSL_PREFIX)/oid.c									\
+		$(POLARSSL_PREFIX)/padlock.c	$(POLARSSL_PREFIX)/pbkdf2.c	$(POLARSSL_PREFIX)/pem.c			\
+		$(POLARSSL_PREFIX)/pkcs5.c		$(POLARSSL_PREFIX)/pkcs11.c	$(POLARSSL_PREFIX)/pkcs12.c		\
+		$(POLARSSL_PREFIX)/pk.c		$(POLARSSL_PREFIX)/pk_wrap.c	$(POLARSSL_PREFIX)/pkparse.c		\
+		$(POLARSSL_PREFIX)/pkwrite.c	$(POLARSSL_PREFIX)/platform.c	$(POLARSSL_PREFIX)/ripemd160.c		\
+		$(POLARSSL_PREFIX)/rsa.c		$(POLARSSL_PREFIX)/sha1.c		$(POLARSSL_PREFIX)/sha256.c		\
+		$(POLARSSL_PREFIX)/sha512.c	$(POLARSSL_PREFIX)/ssl_cache.c	$(POLARSSL_PREFIX)/ssl_cli.c		\
+		$(POLARSSL_PREFIX)/ssl_srv.c   $(POLARSSL_PREFIX)/ssl_ciphersuites.c			\
+		$(POLARSSL_PREFIX)/ssl_tls.c	$(POLARSSL_PREFIX)/threading.c	$(POLARSSL_PREFIX)/timing.c		\
+		$(POLARSSL_PREFIX)/version.c								\
+		$(POLARSSL_PREFIX)/x509.c		$(POLARSSL_PREFIX)/x509_create.c				\
+		$(POLARSSL_PREFIX)/x509_crl.c	$(POLARSSL_PREFIX)/x509_crt.c	$(POLARSSL_PREFIX)/x509_csr.c		\
+		$(POLARSSL_PREFIX)/x509write_crt.c			$(POLARSSL_PREFIX)/x509write_csr.c	\
+		$(POLARSSL_PREFIX)/xtea.c
 
 SRC = main.c \
 	app_ethernet.c \
@@ -78,6 +111,7 @@ SRC = main.c \
 	system_stm32f2xx.c \
 	stm32f2xx_hal_msp.c \
 	usart.c \
+	$(POLARSSL_SRC) \
 	../../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal.c \
 	../../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_adc.c \
 	../../../Libraries/STM32F20x_StdPeriph_Driver/src/stm32f2xx_hal_adc_ex.c \

@@ -143,6 +143,19 @@ void vLwIPTask (void *pvParameters) {
 	}
 }
 
+void vPolarSSLTask (void *pvParameters)
+{
+	int err;
+
+    while(1)
+    {
+    	usart_putstr("Starting vPolarSSLTask\n");
+    	err = polarssl_init();
+    	if (err) break;
+    }
+    vTaskDelete(NULL);
+}
+
 void vLedTask (void *pvParameters)
 {
     while(1)
@@ -170,9 +183,11 @@ int main()
 {
     vFreeRTOSInitAll();
     xTaskCreate(vLedTask,(signed char*)"LedTask", configMINIMAL_STACK_SIZE,
-					NULL, tskIDLE_PRIORITY + 2, NULL);
+					NULL, tskIDLE_PRIORITY + 1, NULL);
     xTaskCreate(vLwIPTask,(signed char*)"LwIPTask", configMINIMAL_STACK_SIZE,
 					NULL, tskIDLE_PRIORITY + 3, NULL);
+    xTaskCreate(vPolarSSLTask,(signed char*)"PolarSSLTask", configMINIMAL_STACK_SIZE,
+					NULL, tskIDLE_PRIORITY + 2, NULL);
     vTaskStartScheduler();
 }
 
