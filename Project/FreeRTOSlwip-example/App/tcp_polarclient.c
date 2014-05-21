@@ -127,9 +127,10 @@ err_t polarssl_init(void) {
     memset( &ssl, 0, sizeof( ssl_context ) );
     x509_crt_init( &cacert );
 
-    usart_putstr( "\n  . Seeding the random number generator...\n" );
+    usart_putstr( "\n  . Seeding the random number generator..." );
 
     entropy_init( &entropy );
+    usart_putstr( "\n  . Entropy done" );
     if( ( ret = ctr_drbg_init( &ctr_drbg, entropy_func, &entropy,
                                (const unsigned char *) pers,
                                strlen( pers ) ) ) != 0 )
@@ -138,6 +139,8 @@ err_t polarssl_init(void) {
     	usart_putstr( "failed  ! ctr_drbg_init\n" );
         goto exit;
     }
+
+    usart_putstr( " - done\n" );
 
     xLwIPQueue = xQueueCreate( 1, sizeof( unsigned long ) );
     if( xLwIPQueue == 0 )

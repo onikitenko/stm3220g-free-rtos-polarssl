@@ -71,10 +71,14 @@ int ctr_drbg_init_entropy_len(
     /*
      * Initialize with an empty key
      */
+    usart_putstr(" Initialize with an empty key\n");
     aes_setkey_enc( &ctx->aes_ctx, key, CTR_DRBG_KEYBITS );
+    usart_putstr(" before ctr_drbg_reseed\n");
+    if( ( ret = ctr_drbg_reseed( ctx, custom, len ) ) != 0 ) {
+    	usart_putstr(" ctr_drbg_reseed returns error\n");
+    	return( ret );
+    }
 
-    if( ( ret = ctr_drbg_reseed( ctx, custom, len ) ) != 0 )
-        return( ret );
 
     return( 0 );
 }
@@ -252,11 +256,13 @@ int ctr_drbg_reseed( ctr_drbg_context *ctx,
     /*
      * Gather entropy_len bytes of entropy to seed state
      */
+    usart_putstr("f_entropy");
     if( 0 != ctx->f_entropy( ctx->p_entropy, seed,
                              ctx->entropy_len ) )
     {
         return( POLARSSL_ERR_CTR_DRBG_ENTROPY_SOURCE_FAILED );
     }
+    usart_putstr(" - done\n");
 
     seedlen += ctx->entropy_len;
 
@@ -272,12 +278,15 @@ int ctr_drbg_reseed( ctr_drbg_context *ctx,
     /*
      * Reduce to 384 bits
      */
+    usart_putstr("block_cipher_df");
     block_cipher_df( seed, seed, seedlen );
-
+    usart_putstr(" - done\n");
     /*
      * Update state
      */
+    usart_putstr("ctr_drbg_update_internal");
     ctr_drbg_update_internal( ctx, seed );
+    usart_putstr(" - done\n");
     ctx->reseed_counter = 1;
 
     return( 0 );

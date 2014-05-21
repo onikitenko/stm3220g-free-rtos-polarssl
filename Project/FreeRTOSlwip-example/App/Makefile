@@ -88,7 +88,7 @@ POLARSSL_SRC = \
 		$(POLARSSL_PREFIX)/hmac_drbg.c								\
 		$(POLARSSL_PREFIX)/md.c		$(POLARSSL_PREFIX)/md_wrap.c	$(POLARSSL_PREFIX)/md2.c			\
 		$(POLARSSL_PREFIX)/md4.c		$(POLARSSL_PREFIX)/md5.c						\
-		$(POLARSSL_PREFIX)/memory_buffer_alloc.c	$(POLARSSL_PREFIX)/net.c			\
+		$(POLARSSL_PREFIX)/memory_buffer_alloc.c			\
 		$(POLARSSL_PREFIX)/oid.c									\
 		$(POLARSSL_PREFIX)/padlock.c	$(POLARSSL_PREFIX)/pbkdf2.c	$(POLARSSL_PREFIX)/pem.c			\
 		$(POLARSSL_PREFIX)/pkcs5.c		$(POLARSSL_PREFIX)/pkcs11.c	$(POLARSSL_PREFIX)/pkcs12.c		\
@@ -102,7 +102,8 @@ POLARSSL_SRC = \
 		$(POLARSSL_PREFIX)/x509.c		$(POLARSSL_PREFIX)/x509_create.c				\
 		$(POLARSSL_PREFIX)/x509_crl.c	$(POLARSSL_PREFIX)/x509_crt.c	$(POLARSSL_PREFIX)/x509_csr.c		\
 		$(POLARSSL_PREFIX)/x509write_crt.c			$(POLARSSL_PREFIX)/x509write_csr.c	\
-		$(POLARSSL_PREFIX)/xtea.c
+		$(POLARSSL_PREFIX)/xtea.c \
+		#$(POLARSSL_PREFIX)/net.c
 
 SRC = main.c \
 	app_ethernet.c \

@@ -297,13 +297,28 @@ static void sighandler( int signum )
     signal( signum, sighandler );
 }
 
+
+
+#if defined(POLARSSL_FREERTOS)
+void set_alarm( int seconds )
+{
+	//do something
+}
+#else
 void set_alarm( int seconds )
 {
     alarmed = 0;
     signal( SIGALRM, sighandler );
     alarm( seconds );
 }
+#endif
 
+#if defined(POLARSSL_FREERTOS)
+void m_sleep( int milliseconds )
+{
+	vTaskDelay(milliseconds);
+}
+#else
 void m_sleep( int milliseconds )
 {
     struct timeval tv;
@@ -313,6 +328,7 @@ void m_sleep( int milliseconds )
 
     select( 0, NULL, NULL, NULL, &tv );
 }
+#endif /* POLARSSL_FREERTOS */
 #endif /* INTEGRITY */
 
 #endif /* _WIN32 && !EFIX64 && !EFI32 */
@@ -442,7 +458,8 @@ hard_test:
     {
         (void) get_timer( &hires, 1 );
 
-        net_usleep( 500000 * secs );
+        //net_usleep( 500000 * secs );
+        vTaskDelay(500 * secs);
 
         millisecs = get_timer( &hires, 0 );
 

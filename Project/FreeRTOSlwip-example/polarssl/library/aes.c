@@ -462,11 +462,16 @@ int aes_setkey_enc( aes_context *ctx, const unsigned char *key, unsigned int key
     unsigned int i;
     uint32_t *RK;
 
+    if (ctx == NULL)
+    	usart_putstr("ctx == NULL\n	");
+
 #if !defined(POLARSSL_AES_ROM_TABLES)
     if( aes_init_done == 0 )
     {
+    	usart_putstr("aes_gen_tables");
         aes_gen_tables();
         aes_init_done = 1;
+        usart_putstr("- done\n");
 
     }
 #endif
@@ -481,6 +486,7 @@ int aes_setkey_enc( aes_context *ctx, const unsigned char *key, unsigned int key
 
 #if defined(POLARSSL_PADLOCK_C) && defined(PADLOCK_ALIGN16)
     if( aes_padlock_ace == -1 )
+    	usart_putstr("padlock_supports\n");
         aes_padlock_ace = padlock_supports( PADLOCK_ACE );
 
     if( aes_padlock_ace )
@@ -490,6 +496,7 @@ int aes_setkey_enc( aes_context *ctx, const unsigned char *key, unsigned int key
     ctx->rk = RK = ctx->buf;
 
 #if defined(POLARSSL_AESNI_C) && defined(POLARSSL_HAVE_X86_64)
+    usart_putstr("aesni_supports\n");
     if( aesni_supports( POLARSSL_AESNI_AES ) )
         return( aesni_setkey_enc( (unsigned char *) ctx->rk, key, keysize ) );
 #endif
@@ -498,6 +505,7 @@ int aes_setkey_enc( aes_context *ctx, const unsigned char *key, unsigned int key
     {
         GET_UINT32_LE( RK[i], key, i << 2 );
     }
+    usart_putstr("before switch\n");
 
     switch( ctx->nr )
     {

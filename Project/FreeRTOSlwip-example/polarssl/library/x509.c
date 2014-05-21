@@ -70,7 +70,7 @@
 #if !defined(_WIN32)
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <dirent.h>
+//#include <dirent.h>
 #endif
 #endif
 

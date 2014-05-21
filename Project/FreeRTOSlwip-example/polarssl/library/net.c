@@ -490,7 +490,17 @@ void net_usleep( unsigned long usec )
     tv.tv_usec = usec;
     select( 0, NULL, NULL, NULL, &tv );
 }
+
+#if defined(POLARSSL_FREERTOS)
+void net_usleep( int usecs )
+{
+	vTaskDelay(usecs<<10);
+}
+#endif
+
 #endif /* POLARSSL_HAVE_TIME */
+
+
 
 /*
  * Read at most 'len' characters

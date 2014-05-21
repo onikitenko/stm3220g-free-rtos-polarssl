@@ -184,9 +184,9 @@ int main()
     vFreeRTOSInitAll();
     xTaskCreate(vLedTask,(signed char*)"LedTask", configMINIMAL_STACK_SIZE,
 					NULL, tskIDLE_PRIORITY + 1, NULL);
-    xTaskCreate(vLwIPTask,(signed char*)"LwIPTask", configMINIMAL_STACK_SIZE,
+    xTaskCreate(vLwIPTask,(signed char*)"LwIPTask", configMINIMAL_STACK_SIZE * 5,
 					NULL, tskIDLE_PRIORITY + 3, NULL);
-    xTaskCreate(vPolarSSLTask,(signed char*)"PolarSSLTask", configMINIMAL_STACK_SIZE,
+    xTaskCreate(vPolarSSLTask,(signed char*)"PolarSSLTask", configMINIMAL_STACK_SIZE * 15,
 					NULL, tskIDLE_PRIORITY + 2, NULL);
     vTaskStartScheduler();
 }
