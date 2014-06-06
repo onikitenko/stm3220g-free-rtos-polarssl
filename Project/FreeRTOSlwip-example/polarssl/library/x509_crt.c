@@ -531,6 +531,7 @@ static int x509_crt_parse_der_core( x509_crt *crt, const unsigned char *buf,
     size_t len;
     unsigned char *p, *end, *crt_end;
 
+    usart_putstr("x509_crt_parse_der_core\n");
     /*
      * Check for valid input
      */
@@ -558,9 +559,10 @@ static int x509_crt_parse_der_core( x509_crt *crt, const unsigned char *buf,
             ASN1_CONSTRUCTED | ASN1_SEQUENCE ) ) != 0 )
     {
         x509_crt_free( crt );
+        usart_putstr("asn1_get_tag fail\n");
         return( POLARSSL_ERR_X509_INVALID_FORMAT );
     }
-
+    usart_putstr("asn1_get_tag success\n");
     if( len > (size_t) ( end - p ) )
     {
         x509_crt_free( crt );
@@ -578,9 +580,10 @@ static int x509_crt_parse_der_core( x509_crt *crt, const unsigned char *buf,
             ASN1_CONSTRUCTED | ASN1_SEQUENCE ) ) != 0 )
     {
         x509_crt_free( crt );
+        usart_putstr("asn1_get_tag2 fail\n");
         return( POLARSSL_ERR_X509_INVALID_FORMAT + ret );
     }
-
+    usart_putstr("asn1_get_tag2 success\n");
     end = p + len;
     crt->tbs.len = end - crt->tbs.p;
 
@@ -610,10 +613,12 @@ static int x509_crt_parse_der_core( x509_crt *crt, const unsigned char *buf,
     if( ( ret = x509_get_sig_alg( &crt->sig_oid1, &crt->sig_md,
                                   &crt->sig_pk ) ) != 0 )
     {
+    	usart_putstr("x509_get_sig_alg fail\n");
         x509_crt_free( crt );
         return( ret );
     }
 
+    usart_putstr("x509_get_sig_alg success\n");
     /*
      * issuer               Name
      */
@@ -628,10 +633,11 @@ static int x509_crt_parse_der_core( x509_crt *crt, const unsigned char *buf,
 
     if( ( ret = x509_get_name( &p, p + len, &crt->issuer ) ) != 0 )
     {
+    	usart_putstr("x509_get_name fail\n");
         x509_crt_free( crt );
         return( ret );
     }
-
+    usart_putstr("x509_get_name success\n");
     crt->issuer_raw.len = p - crt->issuer_raw.p;
 
     /*
@@ -644,8 +650,10 @@ static int x509_crt_parse_der_core( x509_crt *crt, const unsigned char *buf,
                                          &crt->valid_to ) ) != 0 )
     {
         x509_crt_free( crt );
+        usart_putstr("x509_get_dates fail\n");
         return( ret );
     }
+    usart_putstr("x509_get_dates success\n");
 
     /*
      * subject              Name
@@ -670,12 +678,15 @@ static int x509_crt_parse_der_core( x509_crt *crt, const unsigned char *buf,
     /*
      * SubjectPublicKeyInfo
      */
+    usart_putstr("pk_parse_subpubkey start\n");
     if( ( ret = pk_parse_subpubkey( &p, end, &crt->pk ) ) != 0 )
     {
+    	usart_putstr("pk_parse_subpubkey fail\n");
         x509_crt_free( crt );
         return( ret );
     }
 
+    usart_putstr("pk_parse_subpubkey ok\n");
     /*
      *  issuerUniqueID  [1]  IMPLICIT UniqueIdentifier OPTIONAL,
      *                       -- If present, version shall be v2 or v3
@@ -736,9 +747,11 @@ static int x509_crt_parse_der_core( x509_crt *crt, const unsigned char *buf,
      */
     if( ( ret = x509_get_alg_null( &p, end, &crt->sig_oid2 ) ) != 0 )
     {
+    	usart_putstr("x509_get_alg_null fail\n");
         x509_crt_free( crt );
         return( ret );
     }
+    usart_putstr("x509_get_alg_null OK\n");
 
     if( crt->sig_oid1.len != crt->sig_oid2.len ||
         memcmp( crt->sig_oid1.p, crt->sig_oid2.p, crt->sig_oid1.len ) != 0 )
@@ -802,6 +815,7 @@ int x509_crt_parse_der( x509_crt *chain, const unsigned char *buf,
 
     if( ( ret = x509_crt_parse_der_core( crt, buf, buflen ) ) != 0 )
     {
+    	usart_putstr("x509_crt_parse_der_core -err end\n");
         if( prev )
             prev->next = NULL;
 
@@ -810,7 +824,7 @@ int x509_crt_parse_der( x509_crt *chain, const unsigned char *buf,
 
         return( ret );
     }
-
+    usart_putstr("x509_crt_parse_der_core -OK end\n");
     return( 0 );
 }
 
@@ -821,7 +835,7 @@ int x509_crt_parse( x509_crt *chain, const unsigned char *buf, size_t buflen )
 {
     int success = 0, first_error = 0, total_failed = 0;
     int buf_format = X509_FORMAT_DER;
-
+    usart_putstr("x509_crt_parse\n");
     /*
      * Check for valid input
      */
@@ -845,12 +859,12 @@ int x509_crt_parse( x509_crt *chain, const unsigned char *buf, size_t buflen )
     {
         int ret;
         pem_context pem;
-
+        usart_putstr("X509_FORMAT_PEM\n");
         while( buflen > 0 )
         {
             size_t use_len;
             pem_init( &pem );
-
+            usart_putstr("pem_init\n");
             ret = pem_read_buffer( &pem,
                            "-----BEGIN CERTIFICATE-----",
                            "-----END CERTIFICATE-----",
@@ -861,11 +875,13 @@ int x509_crt_parse( x509_crt *chain, const unsigned char *buf, size_t buflen )
                 /*
                  * Was PEM encoded
                  */
+            	usart_putstr("pem_read_buffer returned 0\n");
                 buflen -= use_len;
                 buf += use_len;
             }
             else if( ret == POLARSSL_ERR_PEM_BAD_INPUT_DATA )
             {
+            	usart_putstr("POLARSSL_ERR_PEM_BAD_INPUT_DATA\n");
                 return( ret );
             }
             else if( ret != POLARSSL_ERR_PEM_NO_HEADER_FOOTER_PRESENT )
@@ -878,15 +894,20 @@ int x509_crt_parse( x509_crt *chain, const unsigned char *buf, size_t buflen )
                 buflen -= use_len;
                 buf += use_len;
 
-                if( first_error == 0 )
-                    first_error = ret;
+                if( first_error == 0 ) {
+                	first_error = ret;
+                	usart_putstr("first_error = ret\n");
+                }
+
 
                 continue;
             }
             else
                 break;
 
+            usart_putstr("x509_crt_parse_der\n");
             ret = x509_crt_parse_der( chain, pem.buf, pem.buflen );
+            usart_putstr("x509_crt_parse_der exit \n");
 
             pem_free( &pem );
 
@@ -895,16 +916,20 @@ int x509_crt_parse( x509_crt *chain, const unsigned char *buf, size_t buflen )
                 /*
                  * Quit parsing on a memory error
                  */
+            	usart_putstr("Quit parsing on a memory error\n");
                 if( ret == POLARSSL_ERR_X509_MALLOC_FAILED )
                     return( ret );
 
-                if( first_error == 0 )
+                if( first_error == 0 ) {
                     first_error = ret;
+                    usart_putstr("first_error = ret\n");
+                }
 
                 total_failed++;
                 continue;
             }
 
+            usart_putstr("success = 1\n");
             success = 1;
         }
     }
@@ -914,8 +939,11 @@ int x509_crt_parse( x509_crt *chain, const unsigned char *buf, size_t buflen )
         return( total_failed );
     else if( first_error )
         return( first_error );
-    else
-        return( POLARSSL_ERR_X509_CERT_UNKNOWN_FORMAT );
+    else {
+    	usart_putstr("POLARSSL_ERR_X509_CERT_UNKNOWN_FORMAT\n");
+    	return( POLARSSL_ERR_X509_CERT_UNKNOWN_FORMAT );
+    }
+
 }
 
 #if defined(POLARSSL_FS_IO)

@@ -666,7 +666,7 @@
  *
  * Uncomment this macro to disable the built-in platform entropy functions.
  */
-//#define POLARSSL_NO_PLATFORM_ENTROPY
+#define POLARSSL_NO_PLATFORM_ENTROPY
 
 /**
  * \def POLARSSL_ENTROPY_FORCE_SHA256

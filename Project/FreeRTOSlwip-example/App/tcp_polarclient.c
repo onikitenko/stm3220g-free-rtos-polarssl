@@ -165,7 +165,10 @@ err_t polarssl_init(void) {
 
     if( ret < 0 )
     {
-    	usart_putstr( " failed\n  !  x509_crt_parse returned \n\n");
+    	char buf[50];
+    	sprintf(buf, "x509_crt_parse returned=%d\n", ret );
+    	usart_putstr(buf);
+    	//usart_putstr( " failed\n  !  x509_crt_parse returned \n\n");
         goto exit;
     }
 

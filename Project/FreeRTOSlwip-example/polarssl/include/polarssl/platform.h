@@ -47,6 +47,12 @@ extern "C" {
 #endif
 #endif /* POLARSSL_CONFIG_OPTIONS */
 
+#if defined(POLARSSL_FREERTOS)
+#include <FreeRTOS.h>
+#include <projdefs.h>
+#include <portable.h>
+#endif
+
 /*
  * The function pointers for malloc and free
  */
@@ -64,6 +70,9 @@ extern void (*polarssl_free)( void *ptr );
  */
 int platform_set_malloc_free( void * (*malloc_func)( size_t ),
                               void (*free_func)( void * ) );
+#elif defined(POLARSSL_FREERTOS)
+#define polarssl_malloc		pvPortMalloc
+#define polarssl_free       vPortFree
 #else
 #define polarssl_malloc     malloc
 #define polarssl_free       free
