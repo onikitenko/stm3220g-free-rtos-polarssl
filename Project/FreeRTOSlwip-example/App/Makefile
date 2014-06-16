@@ -219,6 +219,7 @@ all: $(TARGET).hex
 
 $(TARGET).hex: $(EXECUTABLE)
 	$(CP) -O ihex $^ $@
+	$(CP) -O binary $^ $(TARGET).bin
 
 $(EXECUTABLE): $(SRC) $(STARTUP)
 	$(CC) $(CFLAGS) $^ -lm -lc -lnosys -o $@
