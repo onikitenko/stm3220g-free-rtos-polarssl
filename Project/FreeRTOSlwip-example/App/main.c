@@ -126,7 +126,7 @@ void vLwIPTask (void *pvParameters) {
 	  /* Configure the Network interface */
 	  Netif_Config();
 
-	  /* Notify user about the netwoek interface config */
+	  /* Notify user about the network interface config */
 	  User_notification(&gnetif);
 
 	  usart_putstr("tcp initialized\n");
@@ -173,7 +173,6 @@ void vLedTask (void *pvParameters)
         /* Insert delay 100 ms */
         vTaskDelay(100);
 
-        //usart_putstr("ololo\n");
     }
     vTaskDelete(NULL);
 }
@@ -184,8 +183,10 @@ int main()
     vFreeRTOSInitAll();
     xTaskCreate(vLedTask,(signed char*)"LedTask", configMINIMAL_STACK_SIZE,
 					NULL, tskIDLE_PRIORITY + 1, NULL);
+    usart_putstr("Start task");
     xTaskCreate(vLwIPTask,(signed char*)"LwIPTask", configMINIMAL_STACK_SIZE * 5,
 					NULL, tskIDLE_PRIORITY + 3, NULL);
+    usart_putstr("End task");
     xTaskCreate(vPolarSSLTask,(signed char*)"PolarSSLTask", configMINIMAL_STACK_SIZE * 15,
 					NULL, tskIDLE_PRIORITY + 2, NULL);
     vTaskStartScheduler();
