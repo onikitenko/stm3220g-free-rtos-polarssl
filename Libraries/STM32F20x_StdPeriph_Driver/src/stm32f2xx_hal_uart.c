@@ -570,7 +570,7 @@ HAL_StatusTypeDef HAL_UART_DeInit(UART_HandleTypeDef *huart)
   */
 HAL_StatusTypeDef HAL_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size, uint32_t Timeout)
 {
-  uint16_t* tmp;
+  uint16_t *tmp;
   uint32_t tmp1 = 0;
   
   tmp1 = huart->State;
@@ -663,7 +663,7 @@ HAL_StatusTypeDef HAL_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *pData, u
   */
 HAL_StatusTypeDef HAL_UART_Receive(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size, uint32_t Timeout)
 { 
-  uint16_t* tmp;
+  uint16_t *tmp;
   uint32_t tmp1 = 0;
   
   tmp1 = huart->State;
