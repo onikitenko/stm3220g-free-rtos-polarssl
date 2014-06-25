@@ -161,7 +161,7 @@ SRC = main.c \
 	../FreeRTOS/src/queue.c \
 	../FreeRTOS/src/tasks.c \
 	../FreeRTOS/src/timers.c \
-	../FreeRTOS/src/heap_1.c \
+	../FreeRTOS/src/heap_4.c \
 	../FreeRTOS/src/portable/port.c \
 	../LwIP/api/api_lib.c \
 	../LwIP/api/api_msg.c \
