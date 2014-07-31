@@ -296,7 +296,7 @@ portTickType xItemValue;																\
 #define prvGetTCBFromHandle( pxHandle ) ( ( ( pxHandle ) == NULL ) ? ( tskTCB * ) pxCurrentTCB : ( tskTCB * ) ( pxHandle ) )
 
 /* Callback function prototypes. --------------------------*/
-extern void vApplicationStackOverflowHook( xTaskHandle pxTask, signed char *pcTaskName );
+extern void vApplicationStackOverflowHook( xTaskHandle *pxTask, signed char *pcTaskName );
 extern void vApplicationTickHook( void );
 		
 /* File private functions. --------------------------------*/
@@ -392,6 +392,22 @@ static tskTCB *prvAllocateTCBAndStack( unsigned short usStackDepth, portSTACK_TY
 /*-----------------------------------------------------------
  * TASK CREATION API documented in task.h
  *----------------------------------------------------------*/
+
+#define assert(ignore)((void) 0)
+
+void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed char *pcTaskName)
+{
+	usart_putstr("Stack OVERFLOW!!\n");
+
+	char tmp_buf[100] = "";
+	strcpy(tmp_buf, pxCurrentTCB->pcTaskName);
+	usart_putstr("ERROR: vApplicationStackOverflowHook(): Task ");
+	usart_putstr(tmp_buf);
+	usart_putstr(" overflowed its stack\n");
+
+	fflush(stdout);
+	assert(false);
+}
 
 signed portBASE_TYPE xTaskGenericCreate( pdTASK_CODE pxTaskCode, const signed char * const pcName, unsigned short usStackDepth, void *pvParameters, unsigned portBASE_TYPE uxPriority, xTaskHandle *pxCreatedTask, portSTACK_TYPE *puxStackBuffer, const xMemoryRegion * const xRegions )
 {
@@ -2476,5 +2492,22 @@ void vTaskExitCritical( void )
 /*-----------------------------------------------------------*/
 
 
+/**
+ * @brief  This function prints name of task from which it was called.
+ * @param  source_func: identifier to find this output in logs.
+ * @retval None
+ */
+void getTaskName(char *source_func)
+{
+	taskENTER_CRITICAL();
+	unsigned char *name[100];
+
+	strcpy(name, pxCurrentTCB->pcTaskName);
+	usart_putstr(source_func);
+	usart_putstr(" is called from: ");
+	usart_putstr(name);
+	usart_putstr("\n");
+	taskEXIT_CRITICAL();
+}
 
 

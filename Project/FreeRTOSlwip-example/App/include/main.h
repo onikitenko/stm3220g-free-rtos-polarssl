@@ -129,16 +129,16 @@
 
 #define DEST_IP_ADDR0   192
 #define DEST_IP_ADDR1   168
-#define DEST_IP_ADDR2   1
-#define DEST_IP_ADDR3   1
+#define DEST_IP_ADDR2   5
+#define DEST_IP_ADDR3   10
 
 #define DEST_PORT       4433
  
 /*Static IP ADDRESS: IP_ADDR0.IP_ADDR1.IP_ADDR2.IP_ADDR3 */
 #define IP_ADDR0   192
 #define IP_ADDR1   168
-#define IP_ADDR2   1
-#define IP_ADDR3   10
+#define IP_ADDR2   5
+#define IP_ADDR3   11
    
 /*NETMASK*/
 #define NETMASK_ADDR0   255

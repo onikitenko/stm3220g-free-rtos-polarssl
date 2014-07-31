@@ -163,6 +163,7 @@ static void low_level_init(struct netif *netif)
   uint32_t regvalue = 0;
   uint8_t macaddress[6]= { MAC_ADDR0, MAC_ADDR1, MAC_ADDR2, MAC_ADDR3, MAC_ADDR4, MAC_ADDR5 };
 
+  getTaskName("low_level_init");
   usart_putstr("low_level_init\n");
 
   EthHandle.Instance = ETH;  
@@ -175,7 +176,7 @@ static void low_level_init(struct netif *netif)
   EthHandle.Init.ChecksumMode = ETH_CHECKSUM_BY_HARDWARE;
   EthHandle.Init.PhyAddress = DP83848_PHY_ADDRESS;
   
-  usart_putstr("assigned\n");
+  usart_putstr("assigned in low_level_init\n");
   /* configure ethernet peripheral (GPIOs, clocks, MAC, DMA) */
   if (HAL_ETH_Init(&EthHandle) == HAL_OK)
   {
@@ -183,7 +184,7 @@ static void low_level_init(struct netif *netif)
     /* Set netif link flag */
     netif->flags |= NETIF_FLAG_LINK_UP;
   }
-  usart_putstr("HAL_ETH_Init - Not OK\n");
+  usart_putstr("HAL_ETH_Init - Not OK (if above 'OK' - then all is norm.)\n");
   
   /* Initialize Tx Descriptors list: Chain Mode */
   HAL_ETH_DMATxDescListInit(&EthHandle, DMATxDscrTab, &Tx_Buff[0][0], ETH_TXBUFNB);

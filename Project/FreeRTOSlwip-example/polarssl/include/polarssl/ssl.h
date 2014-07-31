@@ -416,6 +416,7 @@ ssl_states;
 
 typedef struct _ssl_session ssl_session;
 typedef struct _ssl_context ssl_context;
+typedef struct tcp_pcb t_pcb;
 typedef struct _ssl_transform ssl_transform;
 typedef struct _ssl_handshake_params ssl_handshake_params;
 #if defined(POLARSSL_SSL_SESSION_TICKETS)
@@ -939,7 +940,7 @@ void ssl_set_dbg( ssl_context *ssl,
  */
 void ssl_set_bio( ssl_context *ssl,
         int (*f_recv)(void *, unsigned char *, size_t), void *p_recv,
-        int (*f_send)(void *, const unsigned char *, size_t), void *p_send );
+        int (*f_send)(t_pcb *, void *, const unsigned char *, size_t), void *p_send );
 
 /**
  * \brief          Set the session cache callbacks (server-side only)

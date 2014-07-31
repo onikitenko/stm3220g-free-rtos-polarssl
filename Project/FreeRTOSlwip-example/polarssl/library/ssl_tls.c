@@ -3412,25 +3412,33 @@ int ssl_init( ssl_context *ssl )
     int ret;
     int len = SSL_BUFFER_LEN;
 
+    usart_putstr("\nssl_init - memset - start\n");
     memset( ssl, 0, sizeof( ssl_context ) );
+    usart_putstr("ssl_init - memset - end\n");
 
     /*
      * Sane defaults
      */
+    usart_putstr("ssl_init -lalala START\n");
     ssl->min_major_ver = SSL_MIN_MAJOR_VERSION;
     ssl->min_minor_ver = SSL_MIN_MINOR_VERSION;
     ssl->max_major_ver = SSL_MAX_MAJOR_VERSION;
     ssl->max_minor_ver = SSL_MAX_MINOR_VERSION;
+    usart_putstr("ssl_init -lalala END\n");
 
+    usart_putstr("ssl_init - ssl_set_ciphersuites - start\n");
     ssl_set_ciphersuites( ssl, ssl_list_ciphersuites() );
+    usart_putstr("ssl_init - ssl_set_ciphersuites - end\n");
 
 #if defined(POLARSSL_DHM_C)
+    usart_putstr("ssl_init - POLARSSL_DHM_C defined?\n");
     if( ( ret = mpi_read_string( &ssl->dhm_P, 16,
                                  POLARSSL_DHM_RFC5114_MODP_1024_P) ) != 0 ||
         ( ret = mpi_read_string( &ssl->dhm_G, 16,
                                  POLARSSL_DHM_RFC5114_MODP_1024_G) ) != 0 )
     {
         SSL_DEBUG_RET( 1, "mpi_read_string", ret );
+        usart_putstr("ssl_init - returning 1\n");
         return( ret );
     }
 #endif
@@ -3445,7 +3453,9 @@ int ssl_init( ssl_context *ssl )
 
     if( ssl->in_ctr == NULL )
     {
+    	usart_putstr("ssl_init - ssl->in_crt == NULL\n");
         SSL_DEBUG_MSG( 1, ( "malloc(%d bytes) failed", len ) );
+        usart_putstr("ssl_init - returning 2\n");
         return( POLARSSL_ERR_SSL_MALLOC_FAILED );
     }
 
@@ -3456,9 +3466,11 @@ int ssl_init( ssl_context *ssl )
 
     if( ssl->out_ctr == NULL )
     {
+    	usart_putstr("ssl_init - ssl->out_crt == NULL\n");
         SSL_DEBUG_MSG( 1, ( "malloc(%d bytes) failed", len ) );
         polarssl_free( ssl->in_ctr );
         ssl->in_ctr = NULL;
+        usart_putstr("ssl_init - returning 3\n");
         return( POLARSSL_ERR_SSL_MALLOC_FAILED );
     }
 
@@ -3474,8 +3486,13 @@ int ssl_init( ssl_context *ssl )
 #endif
 
     if( ( ret = ssl_handshake_init( ssl ) ) != 0 )
-        return( ret );
+    {
+    	 usart_putstr("ssl_init - ssl_handshake != 0\n");
+    	 usart_putstr("ssl_init - returning 4\n");
+    	 return( ret );
+    }
 
+    usart_putstr("ssl_init - END function\n");
     return( 0 );
 }
 
@@ -3642,12 +3659,14 @@ void ssl_set_dbg( ssl_context *ssl,
 
 void ssl_set_bio( ssl_context *ssl,
             int (*f_recv)(void *, unsigned char *, size_t), void *p_recv,
-            int (*f_send)(void *, const unsigned char *, size_t), void *p_send )
+            int (*f_send)(t_pcb *,void *, const unsigned char *, size_t), void *p_send )
 {
+	usart_putstr("ssl_set_bio func - START\n");
     ssl->f_recv     = f_recv;
     ssl->f_send     = f_send;
     ssl->p_recv     = p_recv;
     ssl->p_send     = p_send;
+    usart_putstr("ssl_set_bio func - END\n");
 }
 
 void ssl_set_session_cache( ssl_context *ssl,

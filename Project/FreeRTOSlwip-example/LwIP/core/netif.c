@@ -149,7 +149,7 @@ netif_add(struct netif *netif, ip_addr_t *ipaddr, ip_addr_t *netmask,
   ip_addr_set_zero(&netif->netmask);
   ip_addr_set_zero(&netif->gw);
   netif->flags = 0;
-  usart_putstr("ip addr zero");
+  usart_putstr("ip addr zero\n");
 #if LWIP_DHCP
   /* netif not under DHCP control by default */
   netif->dhcp = NULL;
@@ -171,7 +171,7 @@ netif_add(struct netif *netif, ip_addr_t *ipaddr, ip_addr_t *netmask,
   netif->loop_first = NULL;
   netif->loop_last = NULL;
 #endif /* ENABLE_LOOPBACK */
-
+  usart_putstr("remember netif specific state information data\n");
   /* remember netif specific state information data */
   netif->state = state;
   netif->num = netifnum++;

@@ -580,10 +580,14 @@ int pk_parse_subpubkey( unsigned char **p, const unsigned char *end,
     end = *p + len;
 
     if( ( ret = pk_get_pk_alg( p, end, &pk_alg, &alg_params ) ) != 0 )
-        return( ret );
+    {
+    	return( ret );
+    }
 
     if( ( ret = asn1_get_bitstring_null( p, end, &len ) ) != 0 )
-        return( POLARSSL_ERR_PK_INVALID_PUBKEY + ret );
+    {
+    	return( POLARSSL_ERR_PK_INVALID_PUBKEY + ret );
+    }
 
     if( *p + len != end )
         return( POLARSSL_ERR_PK_INVALID_PUBKEY +
@@ -615,9 +619,13 @@ int pk_parse_subpubkey( unsigned char **p, const unsigned char *end,
         ret = POLARSSL_ERR_PK_INVALID_PUBKEY
               POLARSSL_ERR_ASN1_LENGTH_MISMATCH;
 
+    usart_putstr("pk_parse_subpubkey - ret != 0 - start\n");
     if( ret != 0 )
-        pk_free( pk );
-
+    {
+    	pk_free( pk );
+    	usart_putstr("pk_parse_subpubkey - ret != 0 - pk_free Done (FAIL)\n");
+    }
+    usart_putstr("pk_parse_subpubkey - ret != 0 - ok\n");
     return( ret );
 }
 

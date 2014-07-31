@@ -1298,5 +1298,7 @@ void vTaskSetTaskNumber( xTaskHandle xTask, unsigned portBASE_TYPE uxHandle );
 #endif
 #endif /* TASK_H */
 
+/* Function to get the current Task name*/
 
+void getTaskName(char *);
 

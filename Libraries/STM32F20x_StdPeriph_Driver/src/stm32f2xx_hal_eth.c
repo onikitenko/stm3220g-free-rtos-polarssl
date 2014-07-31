@@ -252,14 +252,14 @@ HAL_StatusTypeDef HAL_ETH_Init(ETH_HandleTypeDef *heth)
     return HAL_ERROR;
   }
   
-  usart_putstr("delay1");
+  usart_putstr("delay1\n");
   /* Delay to assure PHY reset */
   HAL_Delay(PHY_RESET_DELAY);
-  usart_putstr("after delay1");
+  usart_putstr("after delay1\n");
   
   if((heth->Init).AutoNegotiation != ETH_AUTONEGOTIATION_DISABLE)
   {
-	  usart_putstr("We wait for linked status");
+	  usart_putstr("We wait for linked status\n");
     /* We wait for linked status */
     do
     {

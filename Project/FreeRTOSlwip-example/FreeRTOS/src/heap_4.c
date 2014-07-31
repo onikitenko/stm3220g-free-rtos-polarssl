@@ -152,9 +152,7 @@ void *pvReturn = NULL;
 		/* If this is the first call to malloc then the heap will require
 		initialisation to setup the list of free blocks. */
 		if( pxEnd == NULL )
-		{
 			prvHeapInit();
-		}
 
 		/* Check the requested block size is not so large that the top bit is
 		set.  The top bit of the block size member of the xBlockLink structure
@@ -219,7 +217,6 @@ void *pvReturn = NULL;
 						/* Insert the new block into the list of free blocks. */
 						prvInsertBlockIntoFreeList( ( pxNewBlockLink ) );
 					}
-
 					xFreeBytesRemaining -= pxBlock->xBlockSize;
 
 					/* The block is being returned - it is allocated and owned

@@ -34,7 +34,9 @@
  *  http://www.itu.int/ITU-T/studygroups/com17/languages/X.690-0207.pdf
  */
 
+#include "FreeRTOS.h"
 #include "polarssl/config.h"
+#include "../../../FreeRTOS/inc/task.h"
 
 #if defined(POLARSSL_X509_CRT_PARSE_C)
 
@@ -531,17 +533,23 @@ static int x509_crt_parse_der_core( x509_crt *crt, const unsigned char *buf,
     size_t len;
     unsigned char *p, *end, *crt_end;
 
-    usart_putstr("x509_crt_parse_der_core\n");
+    usart_putstr("x509_crt_parse_der_core func\n");
     /*
      * Check for valid input
      */
     if( crt == NULL || buf == NULL )
+    {
+    	usart_putstr("POLARSSL_ERR_X509_BAD_INPUT_DATA\n");
         return( POLARSSL_ERR_X509_BAD_INPUT_DATA );
+    }
 
     p = (unsigned char *) polarssl_malloc( len = buflen );
 
     if( p == NULL )
+    {
+    	usart_putstr("POLARSSL_ERR_X509_MALLOC_FAILED\n");
         return( POLARSSL_ERR_X509_MALLOC_FAILED );
+    }
 
     memcpy( p, buf, buflen );
 
@@ -783,9 +791,11 @@ static int x509_crt_parse_der_core( x509_crt *crt, const unsigned char *buf,
 int x509_crt_parse_der( x509_crt *chain, const unsigned char *buf,
                         size_t buflen )
 {
+	// TODO Make handler for x509 malloc fail
     int ret;
     x509_crt *crt = chain, *prev = NULL;
 
+    getTaskName("x509_crt_parse_der");
     /*
      * Check for valid input
      */
@@ -835,7 +845,6 @@ int x509_crt_parse( x509_crt *chain, const unsigned char *buf, size_t buflen )
 {
     int success = 0, first_error = 0, total_failed = 0;
     int buf_format = X509_FORMAT_DER;
-    usart_putstr("x509_crt_parse\n");
     /*
      * Check for valid input
      */
@@ -852,19 +861,21 @@ int x509_crt_parse( x509_crt *chain, const unsigned char *buf, size_t buflen )
 #endif
 
     if( buf_format == X509_FORMAT_DER )
-        return x509_crt_parse_der( chain, buf, buflen );
+    {
+    	usart_putstr("return x509_crt_parse_der\n");
+    	return x509_crt_parse_der( chain, buf, buflen );
+    }
+
 
 #if defined(POLARSSL_PEM_PARSE_C)
     if( buf_format == X509_FORMAT_PEM )
     {
         int ret;
         pem_context pem;
-        usart_putstr("X509_FORMAT_PEM\n");
         while( buflen > 0 )
         {
             size_t use_len;
             pem_init( &pem );
-            usart_putstr("pem_init\n");
             ret = pem_read_buffer( &pem,
                            "-----BEGIN CERTIFICATE-----",
                            "-----END CERTIFICATE-----",
@@ -875,7 +886,6 @@ int x509_crt_parse( x509_crt *chain, const unsigned char *buf, size_t buflen )
                 /*
                  * Was PEM encoded
                  */
-            	usart_putstr("pem_read_buffer returned 0\n");
                 buflen -= use_len;
                 buf += use_len;
             }
@@ -894,23 +904,28 @@ int x509_crt_parse( x509_crt *chain, const unsigned char *buf, size_t buflen )
                 buflen -= use_len;
                 buf += use_len;
 
-                if( first_error == 0 ) {
+                if( first_error == 0 )
+                {
                 	first_error = ret;
-                	usart_putstr("first_error = ret\n");
+                	usart_putstr("first_error = ret (No error..?) 1\n");
                 }
-
-
                 continue;
             }
             else
                 break;
 
-            usart_putstr("x509_crt_parse_der\n");
+            taskENTER_CRITICAL();
+            usart_putstr("x509_crt_parse_der - START\n");
             ret = x509_crt_parse_der( chain, pem.buf, pem.buflen );
-            usart_putstr("x509_crt_parse_der exit \n");
+            usart_putstr("x509_crt_parse_der - END\n");
+            		char tmp_buf[50];
+                	sprintf(tmp_buf, "x509_crt_parse returned = %d\n", ret );
+                	usart_putstr(tmp_buf);
+            taskEXIT_CRITICAL();
+            usart_putstr("one one one\n");
 
             pem_free( &pem );
-
+            usart_putstr("one and half one and half one and half\n");
             if( ret != 0 )
             {
                 /*
@@ -918,27 +933,38 @@ int x509_crt_parse( x509_crt *chain, const unsigned char *buf, size_t buflen )
                  */
             	usart_putstr("Quit parsing on a memory error\n");
                 if( ret == POLARSSL_ERR_X509_MALLOC_FAILED )
-                    return( ret );
-
-                if( first_error == 0 ) {
-                    first_error = ret;
-                    usart_putstr("first_error = ret\n");
+                {
+                	usart_putstr("ret == POLARSSL_ERR_X509_MALLOC_FAILED\n");
+                	return( ret );
                 }
 
+                usart_putstr("two two two\n");
+                if( first_error == 0 )
+                {
+                    first_error = ret;
+                    usart_putstr("first_error = ret (No error..?) 2\n");
+                }
+
+                usart_putstr("total_failed++\n");
                 total_failed++;
                 continue;
             }
 
-            usart_putstr("success = 1\n");
             success = 1;
         }
     }
 #endif
 
     if( success )
-        return( total_failed );
+    {
+    	usart_putstr("total_failed\n");
+    	return( total_failed );
+    }
     else if( first_error )
-        return( first_error );
+    {
+    	usart_putstr("first_error\n");
+    	return( first_error );
+    }
     else {
     	usart_putstr("POLARSSL_ERR_X509_CERT_UNKNOWN_FORMAT\n");
     	return( POLARSSL_ERR_X509_CERT_UNKNOWN_FORMAT );

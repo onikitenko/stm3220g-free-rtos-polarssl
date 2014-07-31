@@ -155,6 +155,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f2xx_hal.h"
+//#include "../../inc/stm32f2xx_hal_uart.h"
 
 /** @addtogroup STM32F2xx_HAL_Driver
   * @{
@@ -604,6 +605,7 @@ HAL_StatusTypeDef HAL_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *pData, u
       {
         if(UART_WaitOnFlagUntilTimeout(huart, UART_FLAG_TXE, RESET, Timeout) != HAL_OK)
         { 
+        	usart_putstr("HAL_TIMEOUT 1\n");
           return HAL_TIMEOUT;
         }
         tmp = (uint16_t*) pData;
@@ -621,6 +623,7 @@ HAL_StatusTypeDef HAL_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *pData, u
       {
         if(UART_WaitOnFlagUntilTimeout(huart, UART_FLAG_TXE, RESET, Timeout) != HAL_OK)
         {
+        	usart_putstr("HAL_TIMEOUT 2\n");
           return HAL_TIMEOUT;
         }
         huart->Instance->DR = (*pData++ & (uint8_t)0xFF);
@@ -629,6 +632,7 @@ HAL_StatusTypeDef HAL_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *pData, u
     
     if(UART_WaitOnFlagUntilTimeout(huart, UART_FLAG_TC, RESET, Timeout) != HAL_OK)
     { 
+    	usart_putstr("HAL_TIMEOUT 3\n");
       return HAL_TIMEOUT;
     }
     

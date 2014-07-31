@@ -181,7 +181,6 @@ static int entropy_gather_internal( entropy_context *ctx )
     size_t olen;
 
     if( ctx->source_count == 0 ) {
-    	usart_putstr("ctx->source_count == 0\n");
         return( POLARSSL_ERR_ENTROPY_NO_SOURCES_DEFINED );
     }
 
@@ -192,7 +191,6 @@ static int entropy_gather_internal( entropy_context *ctx )
     for( i = 0; i < ctx->source_count; i++ )
     {
         olen = 0;
-        usart_putstr("ctx->source[i].f_source\n");
         if ( ( ret = ctx->source[i].f_source( ctx->source[i].p_source,
                         buf, ENTROPY_MAX_GATHER, &olen ) ) != 0 )
         {
@@ -260,10 +258,9 @@ int entropy_func( void *data, unsigned char *output, size_t len )
             goto exit;
         }
 
-        usart_putstr("entropy_gather_internal");
         if( ( ret = entropy_gather_internal( ctx ) ) != 0 )
             goto exit;
-        usart_putstr("- done\n");
+
         reached = 0;
 
         for( i = 0; i < ctx->source_count; i++ )
@@ -277,7 +274,7 @@ int entropy_func( void *data, unsigned char *output, size_t len )
 #if defined(POLARSSL_ENTROPY_SHA512_ACCUMULATOR)
     usart_putstr("sha512_finish");
     sha512_finish( &ctx->accumulator, buf );
-    usart_putstr("- done\n");
+    usart_putstr(" - done\n");
     /*
      * Reset accumulator and counters and recycle existing entropy
      */
