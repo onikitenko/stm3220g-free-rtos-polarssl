@@ -114,82 +114,131 @@ void vFreeRTOSInitAll()
 //	  BSP_Config();
 //
 
-	  usart_putstr("starting tasks\n");
+}
 
+void Delay2(int d_num)
+{
+	unsigned int d_iter;
+	unsigned int i, j;
+
+	for(i = 0; i <= d_num; i++)
+	{
+		for(j = 0; j <= 500000; j++)
+		{
+			// Empty loop for delay.
+			__NOP();
+		}
+	}
 }
 
 void vLwIPTask (void *pvParameters) {
 
+	  usart_putstr("--==!!!!!!LwIPTask START!!!!!!==--\n");
+
+
 	  /* Initilaize the LwIP stack */
 	  lwip_init();
 
+	  taskENTER_CRITICAL();
 	  /* Configure the Network interface */
 	  Netif_Config();
+	  taskEXIT_CRITICAL();
 
 	  /* Notify user about the network interface config */
 	  User_notification(&gnetif);
 
 	  usart_putstr("tcp initialized\n");
 
+
+	  usart_putstr("tcp_polarclient_connect - about to enter (LwIP)\n");
 	  tcp_polarclient_connect();
+	  usart_putstr("tcp_polarclient_connect - OK(LwIP)\n");
 
 	while (1) {
     	/* Read a received packet from the Ethernet buffers and send it 
      	  to the lwIP for handling */
+//		Delay2(10);
+//		usart_putstr("in While we trust!");
+//		Delay2(10);
+
     	ethernetif_input(&gnetif);
 
     	/* Handle timeouts */
     	sys_check_timeouts();
 	}
+	usart_putstr("LwIPTask OUT OF WHILE!!!!!!!!!!!!!!!!!!!!!!");
+	vTaskDelete(NULL);
 }
 
 void vPolarSSLTask (void *pvParameters)
 {
 	int err;
 
-    while(1)
+	usart_putstr("--==!!!!!!PolarSSLTask START!!!!!!==--\n");
+
+//	usart_putstr("vTaskDelay - Start\n");
+//	vTaskDelay(5000);
+//	usart_putstr("vTaskDelay - End\n");
+
+	while(1)
     {
-    	usart_putstr("Starting vPolarSSLTask\n");
     	err = polarssl_init();
-    	if (err) break;
+    	if (err)
+    		{
+    			usart_putstr("polarssl_init ERROR Achtung!");
+    			break;
+    		}
     }
+	usart_putstr("PolarSSLTask OUT OF WHILE!!!!!!!!!!!!!!!!!!!!!!");
     vTaskDelete(NULL);
 }
 
-void vLedTask (void *pvParameters)
-{
-    while(1)
-    {
-        //HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_6);
-        /* Insert delay 100 ms */
-        vTaskDelay(100);
-        //HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_8);
-        /* Insert delay 100 ms */
-        vTaskDelay(100);
-        HAL_GPIO_TogglePin(GPIOI, GPIO_PIN_9);
-        /* Insert delay 100 ms */
-        vTaskDelay(100);
-        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_7);
-        /* Insert delay 100 ms */
-        vTaskDelay(100);
-
-    }
-    vTaskDelete(NULL);
-}
+//void vLedTask (void *pvParameters)
+//{
+//    while(1)
+//    {
+//        //HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_6);
+//        /* Insert delay 100 ms */
+//        vTaskDelay(100);
+//        //HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_8);
+//        /* Insert delay 100 ms */
+//        vTaskDelay(100);
+//        HAL_GPIO_TogglePin(GPIOI, GPIO_PIN_9);
+//        /* Insert delay 100 ms */
+//        vTaskDelay(100);
+//        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_7);
+//        /* Insert delay 100 ms */
+//        vTaskDelay(100);
+//
+//    }
+//    vTaskDelete(NULL);
+//}
 
 
 int main()
 {
     vFreeRTOSInitAll();
-    xTaskCreate(vLedTask,(signed char*)"LedTask", configMINIMAL_STACK_SIZE,
-					NULL, tskIDLE_PRIORITY + 1, NULL);
-    usart_putstr("Start task");
-    xTaskCreate(vLwIPTask,(signed char*)"LwIPTask", configMINIMAL_STACK_SIZE * 5,
-					NULL, tskIDLE_PRIORITY + 3, NULL);
-    usart_putstr("End task");
-    xTaskCreate(vPolarSSLTask,(signed char*)"PolarSSLTask", configMINIMAL_STACK_SIZE * 15,
-					NULL, tskIDLE_PRIORITY + 2, NULL);
+
+//    xTaskCreate(vLedTask,(signed char*)"LedTask", configMINIMAL_STACK_SIZE,
+//					NULL, tskIDLE_PRIORITY + 1, NULL);
+
+    usart_putstr("\n---------------------------------\n");
+
+    usart_putstr("Initialize vLwIP\n");
+    xTaskCreate(vLwIPTask,(signed char*)"LwIPTask", configMINIMAL_STACK_SIZE * 2,
+					NULL, tskIDLE_PRIORITY + 2, NULL); // Stack size was * 5, tskIDLE_PRIORITY + 3
+    usart_putstr("Initialize vPolarSSL\n");
+    xTaskCreate(vPolarSSLTask,(signed char*)"PolarSSLTask", configMINIMAL_STACK_SIZE * 3,
+					NULL, tskIDLE_PRIORITY + 1 , NULL); // Stack size was * 15, tskIDLE_PRIORITY + 2
+
+    usart_putstr("Launch tasks\n");
     vTaskStartScheduler();
+
+	for(;;)
+	{
+		usart_putstr("Error! Alert! ");
+		Delay2(2);
+	}
 }
 
 /**
@@ -240,13 +289,12 @@ static void Netif_Config(void)
   IP4_ADDR(&netmask, NETMASK_ADDR0, NETMASK_ADDR1 , NETMASK_ADDR2, NETMASK_ADDR3);
   IP4_ADDR(&gw, GW_ADDR0, GW_ADDR1, GW_ADDR2, GW_ADDR3);
 
-  usart_putstr("IP4\n");
   /* add the network interface */
   netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &ethernet_input);
-  usart_putstr("netif_add\n");
+
   /*  Registers the default network interface */
   netif_set_default(&gnetif);
-  usart_putstr("netif_set_default\n");
+
   if (netif_is_link_up(&gnetif))
   {
     /* When the netif is fully configured this function must be called */
@@ -257,10 +305,8 @@ static void Netif_Config(void)
     /* When the netif link is down this function must be called */
     netif_set_down(&gnetif);
   }
-  usart_putstr("netif_set_up/down\n");
   /* Set the link callback function, this function is called on change of link status*/
   netif_set_link_callback(&gnetif, ethernetif_update_config);
-  usart_putstr("netif_set_link_callback\n");
 }
 
 /**

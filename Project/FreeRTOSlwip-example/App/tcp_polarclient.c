@@ -43,6 +43,7 @@
 #include "polarssl/ctr_drbg.h"
 #include "polarssl/error.h"
 #include "polarssl/certs.h"
+#include "../../FreeRTOS/inc/semphr.h"
 
 #if LWIP_TCP
 /* Private typedef -----------------------------------------------------------*/
@@ -68,11 +69,15 @@ xQueueHandle xLwIPQueue;
 #define GET_REQUEST "GET / HTTP/1.0\r\n\r\n"
 #define DEBUG_LEVEL 1
 
+struct polarclient es_my;
+
 static void my_debug( void *ctx, int level, const char *str )
 {
     if( level < DEBUG_LEVEL )
     {
-        usart_putstr( str );
+    	char tmp_buf[100];
+    	strcpy(tmp_buf, str);
+        usart_putstr( tmp_buf );
     }
 }
 
@@ -83,6 +88,7 @@ enum polarclient_states
   ES_NOT_CONNECTED = 0,
   ES_CONNECTED,
   ES_RECEIVED,
+  ES_SENT,
   ES_CLOSING,
 };
 
@@ -90,11 +96,15 @@ enum polarclient_states
 /* structure to be passed as argument to the tcp callbacks */
 struct polarclient
 {
+  int num_bytes_sent;
   enum polarclient_states state; /* connection status */
   struct tcp_pcb *pcb;          /* pointer on the current tcp_pcb */
   struct pbuf *p_tx;            /* pointer on pbuf to be transmitted */
 };
 
+xSemaphoreHandle xSem_Sent;
+xQueueHandle xQueue1;
+unsigned char c_count = 0;
 
 /* Private function prototypes -----------------------------------------------*/
 static err_t tcp_polarclient_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err);
@@ -103,27 +113,120 @@ static err_t tcp_polarclient_poll(void *arg, struct tcp_pcb *tpcb);
 static err_t tcp_polarclient_sent(void *arg, struct tcp_pcb *tpcb, u16_t len);
 static void tcp_polarclient_send(struct tcp_pcb *tpcb, struct polarclient * es);
 static err_t tcp_polarclient_connected(void *arg, struct tcp_pcb *tpcb, err_t err);
-static int tcp_wrapped_write( void *ctx, const unsigned char *buf, size_t len);
+static int tcp_wrapped_write(struct tcp_pcb *tpcb, void *ctx, const unsigned char *buf, size_t len);
 static int tcp_wrapped_recv( void *ctx, unsigned char *buf, size_t len );
 err_t polarssl_init(void);
 /* Private functions ---------------------------------------------------------*/
 
-int tcp_wrapped_write( void *ctx, const unsigned char *buf, size_t len) {
-	return tcp_write(polarclient_pcb, (const void *)buf, (u16_t)len, 1);
+/**
+ * @brief  This function implements delay.
+ * @param  d_num: number of delay cycles.
+ * @retval None
+ */
+void Delay(int d_num)
+{
+	unsigned int d_iter;
+	unsigned int i, j;
+
+	for(i = 0; i <= d_num; i++)
+	{
+		for(j = 0; j <= 500000; j++)
+		{
+			// Empty loop for delay.
+			__NOP();
+		}
+	}
+}
+
+
+int tcp_wrapped_write(struct tcp_pcb *tpcb, void *ctx, const unsigned char *buf, size_t len)
+{
+	struct polarclient *es;
+	struct polarclient *es_my;
+	char *data = buf;
+	//xSemaphoreHandle xSem_Sent;
+
+	usart_putstr("tcp_wrapped_write - Func start\n");
+	es->pcb = tpcb;
+
+	/* allocate pbuf */
+	es->p_tx = pbuf_alloc(PBUF_TRANSPORT, strlen((char*)data) , PBUF_POOL);
+
+	if (es->p_tx)
+	{
+		/* copy data to pbuf */
+		pbuf_take(es->p_tx, (char*)data, strlen((char*)data));
+
+		/* pass newly allocated es structure as argument to tpcb */
+		tcp_arg(tpcb, es);
+
+		/* initialize LwIP tcp_recv callback function */
+		usart_putstr("tcp_recv is called from tcp_wrapped_write\n");
+		tcp_recv(tpcb, tcp_polarclient_recv);
+
+		/* initialize LwIP tcp_sent callback function */
+		tcp_sent(tpcb, tcp_polarclient_sent);
+
+		/* initialize LwIP tcp_poll callback function */
+		tcp_poll(tpcb, tcp_polarclient_poll, 1);
+
+		/* send data */
+		tcp_polarclient_send(tpcb,es);
+
+		//TODO not only delay, but with check for es->state == ES_SENT
+			xSemaphoreTake( xSem_Sent , 2000 / portTICK_RATE_MS);
+	}
+		usart_putstr("tcp_wrapped_write - Func end\n");
+
+		char tmp_buf[50] = "";
+		sprintf(tmp_buf, "%d",  es->num_bytes_sent);
+		usart_putstr(tmp_buf);
+
+
+	    return es->num_bytes_sent;
 }
 
 int tcp_wrapped_recv( void *ctx, unsigned char *buf, size_t len) {
 	//TODO
+	//usart_putstr("tcp_recv - Start\n");
+	//tcp_recv(polarclient_pcb, callback_recv);
+	//usart_putstr("tcp_recv - End\n");
+
+	// ... some code to convert params from
+	// <void *ctx, unsigned char *buf, size_t len > to
+	// <struct tcp_pcb *pcb, tcp_recv_fn recv>
+
+	// tcp_recv(struct tcp_pcb *pcb, tcp_recv_fn recv);
 	int num_bytes = len;
+
+	char tmp_buf[50];
+
+	usart_putstr("Num bytes: ");
+	sprintf(tmp_buf, "%d",  len);
+	usart_putstr(tmp_buf);
+	usart_putstr(" b.\n");
+
 	return num_bytes;
 }
 
 err_t polarssl_init(void) {
 
 	err_t ret;
+    entropy_context entropy;
+    ctr_drbg_context ctr_drbg;
+    ssl_context ssl;
+    x509_crt cacert;
+    int len;
+    unsigned char buf[1024];
+
 	/*
      * 0. Initialize the RNG and the session data
      */
+
+		vSemaphoreCreateBinary( xSem_Sent );
+		//xQueueHandle xQueue1;
+		unsigned char item = 0;
+
     memset( &ssl, 0, sizeof( ssl_context ) );
     x509_crt_init( &cacert );
 
@@ -140,7 +243,7 @@ err_t polarssl_init(void) {
         goto exit;
     }
 
-    usart_putstr( " - done\n" );
+    usart_putstr( " - done after ret = ctr_drbg_init\n" );
 
     xLwIPQueue = xQueueCreate( 1, sizeof( unsigned long ) );
     if( xLwIPQueue == 0 )
@@ -154,6 +257,7 @@ err_t polarssl_init(void) {
      * 0. Initialize certificates
      */
     usart_putstr( "  . Loading the CA root certificate ..." );
+    getTaskName("polarssl_init");
 
 #if defined(POLARSSL_CERTS_C)
     ret = x509_crt_parse( &cacert, (const unsigned char *) test_ca_list,
@@ -166,19 +270,22 @@ err_t polarssl_init(void) {
     if( ret < 0 )
     {
     	char buf[50];
-    	sprintf(buf, "x509_crt_parse returned=%d\n", ret );
+    	sprintf(buf, "x509_crt_parse returned = %d\n", ret );
     	usart_putstr(buf);
     	//usart_putstr( " failed\n  !  x509_crt_parse returned \n\n");
         goto exit;
     }
 
-    usart_putstr( " ok ( skipped)\n");
+    usart_putstr( " ok (skipped)\n");
 
     /*
      * 1. Start the connection
      */
-    usart_putstr( "  . Connecting to tcp/192.168.1.1/4433\n" );
+    usart_putstr( "  . Connecting to tcp/192.168.5.10/4433\n" );
     tcp_polarclient_connect();
+//    usart_putstr("ssl_set_bio - Before Queue sent item\n");
+//    xQueueSend( xQueue1, &item, 0);
+//    usart_putstr("ssl_set_bio - After Queue sent item\n");
 
     if( xLwIPQueue != 0 )
     {
@@ -191,20 +298,19 @@ err_t polarssl_init(void) {
         }
     }
 
-    usart_putstr( " ok\n" );
+    usart_putstr( " ok (Conecting)\n" );
 
     /*
      * 2. Setup stuff
      */
-    usart_putstr( "  . Setting up the SSL/TLS structure..." );
+    usart_putstr( "  . Setting up the SSL/TLS structure...\n" );
 
     if( ( ret = ssl_init( &ssl ) ) != 0 )
     {
     	usart_putstr( " failed\n  ! ssl_init returned \n");
         goto exit;
     }
-
-    usart_putstr( " ok\n" );
+    usart_putstr( " ok (SSL/TLS)\n" );
 
     ssl_set_endpoint( &ssl, SSL_IS_CLIENT );
     /* OPTIONAL is not optimal for security,
@@ -216,9 +322,134 @@ err_t polarssl_init(void) {
     ssl_set_dbg( &ssl, my_debug, 0 );
     //TODO You will receive that pointer as the first argument to your callback..
     //So just cast it back to the correct pointer and then you have your data..
+    usart_putstr("ssl_set_bio - Start\n");
     ssl_set_bio( &ssl, tcp_wrapped_recv, polarclient_pcb,
     		tcp_wrapped_write, polarclient_pcb );
+    usart_putstr("ssl_set_bio - End\n");
+    xQueueSend( xQueue1, &item, 0);
+    //usart_putstr("ssl_set_bio - After Queue sent item\n");
 
+    	/*			----------- New Start -------------
+         * 4. Handshake
+         */
+        usart_putstr( "  . Performing the SSL/TLS handshake...\n" );
+
+        while( ( ret = ssl_handshake( &ssl ) ) != 0 )
+        {
+            if( ret != POLARSSL_ERR_NET_WANT_READ && ret != POLARSSL_ERR_NET_WANT_WRITE )
+            {
+                usart_putstr( " failed\n  ! ssl_handshake returned: ");
+                char tmp_buf[50];
+                sprintf(tmp_buf, "%d\n", ret );
+                usart_putstr(tmp_buf);
+                goto exit;
+            }
+        }
+
+        usart_putstr( " ok (ssl_handshake)\n" );
+
+        /*
+         * 5. Verify the server certificate
+         */
+        usart_putstr( "  . Verifying peer X.509 certificate...\n" );
+
+        /* In real life, we may want to bail out when ret != 0 */
+        if( ( ret = ssl_get_verify_result( &ssl ) ) != 0 )
+        {
+            usart_putstr( " failed (Verifying peer X.509)\n" );
+
+            if( ( ret & BADCERT_EXPIRED ) != 0 )
+                usart_putstr( "  ! server certificate has expired\n" );
+
+            if( ( ret & BADCERT_REVOKED ) != 0 )
+                usart_putstr( "  ! server certificate has been revoked\n" );
+
+            if( ( ret & BADCERT_CN_MISMATCH ) != 0 )
+            {
+            	usart_putstr( "  ! CN mismatch (expected CN=%s)\n");
+            	usart_putstr("   PolarSSL Server 1\n");
+            }
+
+
+            if( ( ret & BADCERT_NOT_TRUSTED ) != 0 )
+                usart_putstr( "  ! self-signed or not signed by a trusted CA\n" );
+
+            usart_putstr( "\n" );
+        }
+        else
+            usart_putstr( " ok\n" );
+
+        /*
+         * 3. Write the GET request
+         */
+        usart_putstr( "  > Write to server:" );
+
+        len = sprintf( (char *) buf, GET_REQUEST );
+
+        while( ( ret = ssl_write( &ssl, buf, len ) ) <= 0 )
+        {
+            if( ret != POLARSSL_ERR_NET_WANT_READ && ret != POLARSSL_ERR_NET_WANT_WRITE )
+            {
+                usart_putstr(" failed\n  ! ssl_write returned: ");
+                char tmp_buf[50];
+                sprintf(tmp_buf, "%d\n", ret );
+                usart_putstr(tmp_buf);
+                goto exit;
+            }
+        }
+
+        len = ret;
+        char tmp_buf[50];
+        sprintf(tmp_buf, " %d ", len );
+        usart_putstr(tmp_buf);
+        usart_putstr( "bytes written\n\n" );
+        strcpy(tmp_buf, (char *) buf );
+        usart_putstr(tmp_buf);
+
+        /*
+         * 7. Read the HTTP response
+         */
+        usart_putstr( "  < Read from server:" );
+
+        do
+        {
+            len = sizeof( buf ) - 1;
+            memset( buf, 0, sizeof( buf ) );
+            ret = ssl_read( &ssl, buf, len );
+
+            if( ret == POLARSSL_ERR_NET_WANT_READ || ret == POLARSSL_ERR_NET_WANT_WRITE )
+                continue;
+
+            if( ret == POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY )
+                break;
+
+            if( ret < 0 )
+            {
+                printf( "failed\n  ! ssl_read returned: ");
+                char tmp_buf[50];
+                sprintf(tmp_buf, "%d\n", ret );
+                usart_putstr(tmp_buf);
+                break;
+            }
+
+            if( ret == 0 )
+            {
+                usart_putstr( "\n\nEOF\n\n" );
+                break;
+            }
+
+            len = ret;
+            char tmp_buf[50];
+            sprintf(tmp_buf, " %d ", len );
+            usart_putstr(tmp_buf);
+            usart_putstr( "bytes read\n\n" );
+            strcpy(tmp_buf, (char *) buf );
+            usart_putstr(tmp_buf);
+        }
+        while( 1 );
+
+        ssl_close_notify( &ssl );
+		//               ----------- New End -------------
 exit:
 
 #ifdef POLARSSL_ERROR_C
@@ -226,7 +457,7 @@ exit:
     {
         char error_buf[100];
         polarssl_strerror( ret, error_buf, 100 );
-        printf("Last error was: %d - %s\n\n", ret, error_buf );
+        usart_putstr("Last error was: %d - %s\n\n"); //, ret, error_buf );
     }
 #endif
 
@@ -246,8 +477,11 @@ exit:
 void tcp_polarclient_connect(void)
 {
   struct ip_addr DestIPaddr;
-  
-  usart_putstr("start tcp_polarclient_connect\n");
+  struct polarclient *es_my;
+  err_t err;
+
+  getTaskName("tcp_polarclient_connect");
+
   /* create new tcp pcb */
   polarclient_pcb = tcp_new();
   
@@ -255,10 +489,19 @@ void tcp_polarclient_connect(void)
   {
     IP4_ADDR( &DestIPaddr, DEST_IP_ADDR0, DEST_IP_ADDR1, DEST_IP_ADDR2, DEST_IP_ADDR3 );
     
-    usart_putstr("connect to destination address/port\n");
+  //  usart_putstr("connect to destination address/port\n");
+    getTaskName("connect to destination address/port");
     /* connect to destination address/port */
-    tcp_connect(polarclient_pcb,&DestIPaddr,DEST_PORT,tcp_polarclient_connected);
-    usart_putstr("connect to destination address/port exit \n");
+
+    err = tcp_connect(polarclient_pcb,&DestIPaddr,DEST_PORT,tcp_polarclient_connected);
+
+    if (err == ERR_OK)
+    	usart_putstr("tcp_connect OK\n");
+    else
+    	usart_putstr("tcp_connect FAIL\n");
+
+    getTaskName("address/port exit");
+    usart_putstr("connect to dest. address/port exit \n");
   }
   else
   {
@@ -273,15 +516,21 @@ void tcp_polarclient_connect(void)
 
 /**
   * @brief Function called when TCP connection established
-  * @param tpcb: pointer on the connection contol block
+  * @param tpcb: pointer on the connection control block
   * @param err: when connection correctly established err should be ERR_OK 
   * @retval err_t: returned error 
   */
 static err_t tcp_polarclient_connected(void *arg, struct tcp_pcb *tpcb, err_t err)
 {
+	//TODO add semaphores
   struct polarclient *es = NULL;
-  
-  usart_putstr("tcp_polarclient_connected\n");
+  struct polarclient *es_my;
+
+  	  xQueue1 = xQueueCreate( 1, sizeof( unsigned char ) );
+  unsigned char item = 0;
+
+  getTaskName("tcp_polarclient_connected");
+  usart_putstr("tcp_polarclient_connected Func - Start\n");
 
   //xQueuePost
 
@@ -289,26 +538,27 @@ static err_t tcp_polarclient_connected(void *arg, struct tcp_pcb *tpcb, err_t er
   {
     /* allocate structure es to maintain tcp connection informations */
     es = (struct polarclient *)mem_malloc(sizeof(struct polarclient));
-  
     if (es != NULL)
     {
-      es->state = ES_CONNECTED;
+    	usart_putstr("ES_CONNECTED\n");
+      es_my->state = ES_CONNECTED;
       es->pcb = tpcb;
       
       sprintf((char*)data, "sending tcp client message %d", (int)message_count);
         
       /* allocate pbuf */
       es->p_tx = pbuf_alloc(PBUF_TRANSPORT, strlen((char*)data) , PBUF_POOL);
-         
+
       if (es->p_tx)
-      {       
+      {
         /* copy data to pbuf */
         pbuf_take(es->p_tx, (char*)data, strlen((char*)data));
         
         /* pass newly allocated es structure as argument to tpcb */
         tcp_arg(tpcb, es);
   
-        /* initialize LwIP tcp_recv callback function */ 
+        /* initialize LwIP tcp_recv callback function */
+        usart_putstr("tcp_recv is called from tcp_polarclient_connected\n");
         tcp_recv(tpcb, tcp_polarclient_recv);
   
         /* initialize LwIP tcp_sent callback function */
@@ -319,15 +569,48 @@ static err_t tcp_polarclient_connected(void *arg, struct tcp_pcb *tpcb, err_t er
     
         /* send data */
         tcp_polarclient_send(tpcb,es);
-        
+
+        getTaskName("before xQueue1");
+
+        char buf[50];
+            	sprintf(buf, "c_count = %d (Before While(1))\n", c_count );
+            	usart_putstr(buf);
+
+        while(1)
+        {
+        	if(c_count == 0)
+        	{
+            	usart_putstr("In While(1) with Queues\n");
+    			if( xQueueReceive(xQueue1, &item, 500) )
+    			{
+    				usart_putstr("xQueue1 == 1 - no sleep. (Receive is done)\n");
+    				break;
+    			}
+    			else
+    			{
+    				usart_putstr("xQueue1 == 0 - go to sleep some (For 500 ticks)\n");
+    			}
+        	}
+        	else
+        		break;
+        }
+                  	sprintf(buf, "c_count = %d (After While(1))\n", c_count );
+                  	usart_putstr(buf);
+        c_count++;
+                  	sprintf(buf, "c_count = %d (After c_count++)\n", c_count );
+                  	usart_putstr(buf);
+
+        getTaskName("t.._p.._c.. - return ERR_OK");
+        usart_putstr("tcp_polarclient_connected Func - return ERR_OK\n");
         return ERR_OK;
+
       }
     }
     else
     {
       /* close connection */
+    	usart_putstr("tcp_polarclient_connection_close - ERR_MEM\n");
       tcp_polarclient_connection_close(tpcb, es);
-      
       /* return memory allocation error */
       return ERR_MEM;  
     }
@@ -335,8 +618,10 @@ static err_t tcp_polarclient_connected(void *arg, struct tcp_pcb *tpcb, err_t er
   else
   {
     /* close connection */
+	  usart_putstr("tcp_polarclient_connection_close\n");
     tcp_polarclient_connection_close(tpcb, es);
   }
+  usart_putstr("tcp_polarclient_connected - return err\n");
   return err;
 }
     
@@ -365,6 +650,8 @@ static err_t tcp_polarclient_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *
     if(es->p_tx == NULL)
     {
        /* we're done sending, close connection */
+    	getTaskName("Done sending from tcp_polarclient_recv");
+    	usart_putstr("we're done sending, close connection\n");
        tcp_polarclient_connection_close(tpcb, es);
     }
     else
@@ -393,10 +680,12 @@ static err_t tcp_polarclient_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *
     tcp_recved(tpcb, p->tot_len);  
     
     /* Call our wrapper callback */
-    tcp_wrapped_recv(tpcb, p->payload, p->tot_len);
+    //tcp_wrapped_recv(tpcb, p->payload, p->tot_len);
 
+    //TODO free or not???? It seems we should free it
     pbuf_free(p);
-    tcp_polarclient_connection_close(tpcb, es);
+    usart_putstr("Call our wrapper callback");
+    //tcp_polarclient_connection_close(tpcb, es);
     ret_err = ERR_OK;
   }
 
@@ -429,7 +718,7 @@ static void tcp_polarclient_send(struct tcp_pcb *tpcb, struct polarclient * es)
          (es->p_tx != NULL) && 
          (es->p_tx->len <= tcp_sndbuf(tpcb)))
   {
-    
+	  usart_putstr("tcp_polarclient_send - NO Errors\n");
     /* get pointer on pbuf from es structure */
     ptr = es->p_tx;
 
@@ -443,15 +732,19 @@ static void tcp_polarclient_send(struct tcp_pcb *tpcb, struct polarclient * es)
       
       if(es->p_tx != NULL)
       {
+    	  usart_putstr("tcp_polarclient_send - next es->p_tx\n");
         /* increment reference count for es->p */
         pbuf_ref(es->p_tx);
       }
       
       /* free pbuf: will free pbufs up to es->p (because es->p has a reference count > 0) */
+      usart_putstr("tcp_polarclient_send - pbuf_free - start\n");
       pbuf_free(ptr);
+      usart_putstr("tcp_polarclient_send - pbuf_free - end\n");
    }
    else if(wr_err == ERR_MEM)
    {
+	   usart_putstr("tcp_polarclient_send - low memory\n");
       /* we are low on memory, try later, defer to poll */
      es->p_tx = ptr;
    }
@@ -460,6 +753,7 @@ static void tcp_polarclient_send(struct tcp_pcb *tpcb, struct polarclient * es)
      /* other problem ?? */
    }
   }
+  usart_putstr("tcp_polarclient_send - END function\n");
 }
 
 /**
@@ -487,6 +781,7 @@ static err_t tcp_polarclient_poll(void *arg, struct tcp_pcb *tpcb)
       if(es->state == ES_CLOSING)
       {
         /* close tcp connection */
+    	  usart_putstr("close tcp connection");
         tcp_polarclient_connection_close(tpcb, es);
       }
     }
@@ -512,16 +807,23 @@ static err_t tcp_polarclient_poll(void *arg, struct tcp_pcb *tpcb)
 static err_t tcp_polarclient_sent(void *arg, struct tcp_pcb *tpcb, u16_t len)
 {
   struct polarclient *es;
+  struct polarclient *es_my;
+  //xSemaphoreHandle xSem_Sent;
 
   LWIP_UNUSED_ARG(len);
 
   es = (struct polarclient *)arg;
+  es_my->num_bytes_sent = len;
   
   if(es->p_tx != NULL)
   {
     /* still got pbufs to send */
     tcp_polarclient_send(tpcb, es);
   }
+
+  es_my->state = ES_SENT;
+
+  xSemaphoreGive( xSem_Sent );
 
   return ERR_OK;
 }
@@ -535,7 +837,7 @@ static err_t tcp_polarclient_sent(void *arg, struct tcp_pcb *tpcb, u16_t len)
 static void tcp_polarclient_connection_close(struct tcp_pcb *tpcb, struct polarclient * es )
 {
 
-  usart_putstr("tcp_polarclient_connection_close\n");
+  usart_putstr("tcp_polarclient_connection_close in Function Start\n");
   /* remove callbacks */
   tcp_recv(tpcb, NULL);
   tcp_sent(tpcb, NULL);
@@ -548,7 +850,7 @@ static void tcp_polarclient_connection_close(struct tcp_pcb *tpcb, struct polarc
 
   /* close tcp connection */
   tcp_close(tpcb);
-  
+  usart_putstr("tcp_polarclient_connection_close in Function End\n");
 }
 
 #endif /* LWIP_TCP */
