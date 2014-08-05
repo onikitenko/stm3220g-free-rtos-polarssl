@@ -653,6 +653,8 @@ tcp_connect(struct tcp_pcb *pcb, ip_addr_t *ipaddr, u16_t port,
   u32_t iss;
   u16_t old_local_port;
 
+  usart_putstr("In tcp_connect func.\n");
+
   LWIP_ERROR("tcp_connect: can only connect from state CLOSED", pcb->state == CLOSED, return ERR_ISCONN);
 
   LWIP_DEBUGF(TCP_DEBUG, ("tcp_connect to port %"U16_F"\n", port));
@@ -1303,7 +1305,9 @@ tcp_recv(struct tcp_pcb *pcb, tcp_recv_fn recv)
 void
 tcp_sent(struct tcp_pcb *pcb, tcp_sent_fn sent)
 {
-  pcb->sent = sent;
+	usart_putstr("tcp_sent - Start\n");
+    pcb->sent = sent;
+    usart_putstr("tcp_sent - End\n");
 }
 
 /**

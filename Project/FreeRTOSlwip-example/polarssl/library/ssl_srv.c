@@ -3166,6 +3166,8 @@ int ssl_handshake_server_step( ssl_context *ssl )
 {
     int ret = 0;
 
+    usart_putstr("ssl_handshake - ssl_handshake_step - ssl_handshake_server_step - Start\n");
+
     if( ssl->state == SSL_HANDSHAKE_OVER )
         return( POLARSSL_ERR_SSL_BAD_INPUT_DATA );
 
@@ -3241,6 +3243,8 @@ int ssl_handshake_server_step( ssl_context *ssl )
             ret = ssl_parse_finished( ssl );
             break;
 
+            usart_putstr("ssl_handshake - ssl_handshake_step - ssl_handshake_server_step - a looooot of funcs...\n");
+
         /*
          *  ==> ( NewSessionTicket )
          *        ChangeCipherSpec
@@ -3273,6 +3277,7 @@ int ssl_handshake_server_step( ssl_context *ssl )
             return( POLARSSL_ERR_SSL_BAD_INPUT_DATA );
     }
 
+    usart_putstr("ssl_handshake - ssl_handshake_step - ssl_handshake_server_step - End\n");
     return( ret );
 }
 #endif

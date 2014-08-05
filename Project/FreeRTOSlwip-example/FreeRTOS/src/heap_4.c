@@ -142,13 +142,20 @@ static size_t xBlockAllocatedBit = 0;
 
 /*-----------------------------------------------------------*/
 
+void vApplicationMallocFailedHook ( void )
+{
+	getTaskName("Malloc failed");
+
+	usart_putstr("ERROR ! Malloc has been FAILED!!!\n");
+}
+
 void *pvPortMalloc( size_t xWantedSize )
 {
 xBlockLink *pxBlock, *pxPreviousBlock, *pxNewBlockLink;
 void *pvReturn = NULL;
 
 	vTaskSuspendAll();
-	{
+	//{
 		/* If this is the first call to malloc then the heap will require
 		initialisation to setup the list of free blocks. */
 		if( pxEnd == NULL )
@@ -226,14 +233,13 @@ void *pvReturn = NULL;
 				}
 			}
 		}
-	}
+	//}
 	xTaskResumeAll();
 
 	#if( configUSE_MALLOC_FAILED_HOOK == 1 )
 	{
 		if( pvReturn == NULL )
 		{
-			extern void vApplicationMallocFailedHook( void );
 			vApplicationMallocFailedHook();
 		}
 	}

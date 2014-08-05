@@ -51,6 +51,10 @@ typedef UINT32 uint32_t;
 #include <time.h>
 #endif
 
+time_t lol_time () {
+ return 414000000;
+}
+
 #if defined(POLARSSL_SSL_SERVER_NAME_INDICATION)
 static void ssl_write_hostname_ext( ssl_context *ssl,
                                     unsigned char *buf,
@@ -350,7 +354,7 @@ static void ssl_write_truncated_hmac_ext( ssl_context *ssl,
 static void ssl_write_session_ticket_ext( ssl_context *ssl,
                                           unsigned char *buf, size_t *olen )
 {
-    unsigned char *p = buf;
+	unsigned char *p = buf;
     size_t tlen = ssl->session_negotiate->ticket_len;
 
     if( ssl->session_tickets == SSL_SESSION_TICKETS_DISABLED )
@@ -377,7 +381,9 @@ static void ssl_write_session_ticket_ext( ssl_context *ssl,
 
     SSL_DEBUG_MSG( 3, ( "sending session ticket of length %d", tlen ) );
 
-    memcpy( p, ssl->session_negotiate->ticket, tlen );
+    usart_putstr("ssl_write_session_ticket_ext - memcpy - start\n");
+    memcpy( p, ssl->session_negotiate->ticket, sizeof(tlen) );
+    usart_putstr("ssl_write_session_ticket_ext - memcpy - end\n");
 
     *olen += tlen;
 }
@@ -437,6 +443,9 @@ static int ssl_write_client_hello( ssl_context *ssl )
     size_t i, n, olen, ext_len = 0;
     unsigned char *buf;
     unsigned char *p, *q;
+
+    usart_putstr("ssl_write_client_hello - Start\n");
+
 #if defined(POLARSSL_HAVE_TIME)
     time_t t;
 #endif
@@ -448,6 +457,7 @@ static int ssl_write_client_hello( ssl_context *ssl )
     if( ssl->f_rng == NULL )
     {
         SSL_DEBUG_MSG( 1, ( "no RNG provided") );
+        usart_putstr("ssl_write_client_hello - ssl->f_rng == NULL\n");
         return( POLARSSL_ERR_SSL_NO_RNG );
     }
 
@@ -479,8 +489,13 @@ static int ssl_write_client_hello( ssl_context *ssl )
     SSL_DEBUG_MSG( 3, ( "client hello, max version: [%d:%d]",
                    buf[4], buf[5] ) );
 
+    //TODO uncomment time function and debug it
 #if defined(POLARSSL_HAVE_TIME)
-    t = time( NULL );
+    t = lol_time();
+
+//    if( t == ((time_t)(-1)) )
+//    	usart_putstr("ssl_write_client_hello - unable to get time\n");
+
     *p++ = (unsigned char)( t >> 24 );
     *p++ = (unsigned char)( t >> 16 );
     *p++ = (unsigned char)( t >>  8 );
@@ -489,13 +504,19 @@ static int ssl_write_client_hello( ssl_context *ssl )
     SSL_DEBUG_MSG( 3, ( "client hello, current time: %lu", t ) );
 #else
     if( ( ret = ssl->f_rng( ssl->p_rng, p, 4 ) ) != 0 )
-        return( ret );
+    {
+    	usart_putstr("ssl_write_client_hello - return 1\n");
+    	return( ret );
+    }
 
     p += 4;
 #endif
 
     if( ( ret = ssl->f_rng( ssl->p_rng, p, 28 ) ) != 0 )
+    {
+    	usart_putstr("ssl_write_client_hello - return 2\n");
         return( ret );
+    }
 
     p += 28;
 
@@ -533,7 +554,10 @@ static int ssl_write_client_hello( ssl_context *ssl )
         ret = ssl->f_rng( ssl->p_rng, ssl->session_negotiate->id, 32 );
 
         if( ret != 0 )
-            return( ret );
+        {
+        	usart_putstr("ssl_write_client_hello - return 3\n");
+        	return( ret );
+        }
 
         ssl->session_negotiate->length = n = 32;
     }
@@ -562,6 +586,7 @@ static int ssl_write_client_hello( ssl_context *ssl )
         *p++ = (unsigned char)( SSL_EMPTY_RENEGOTIATION_INFO >> 8 );
         *p++ = (unsigned char)( SSL_EMPTY_RENEGOTIATION_INFO      );
         n++;
+        usart_putstr("ssl_write_client_hello - ssl->renegotiation == SSL_INITIAL_HANDSHAKE =-=\n");
     }
 
     for( i = 0; ciphersuites[i] != 0; i++ )
@@ -620,6 +645,8 @@ static int ssl_write_client_hello( ssl_context *ssl )
     ext_len += olen;
 #endif
 
+    usart_putstr("ssl_write_client_hello - in the middle\n");
+
 #if defined(POLARSSL_ECDH_C) || defined(POLARSSL_ECDSA_C)
     ssl_write_supported_elliptic_curves_ext( ssl, p + 2 + ext_len, &olen );
     ext_len += olen;
@@ -661,14 +688,18 @@ static int ssl_write_client_hello( ssl_context *ssl )
 
     ssl->state++;
 
+    usart_putstr("ssl_write_client_hello - a litte bit later\n");
+
     if( ( ret = ssl_write_record( ssl ) ) != 0 )
     {
         SSL_DEBUG_RET( 1, "ssl_write_record", ret );
+        usart_putstr("ssl_write_client_hello - ret = ssl_write_record( ssl ) ) != 0\n");
         return( ret );
     }
 
     SSL_DEBUG_MSG( 2, ( "<= write client hello" ) );
 
+    usart_putstr("ssl_write_client_hello - return( 0 ) ==---==\n");
     return( 0 );
 }
 
@@ -862,6 +893,9 @@ static int ssl_parse_server_hello( ssl_context *ssl )
     unsigned char *buf, *ext;
     int renegotiation_info_seen = 0;
     int handshake_failure = 0;
+
+    usart_putstr("ssl_parse_server_hello - Start");
+
 #if defined(POLARSSL_DEBUG_C)
     uint32_t t;
 #endif
@@ -1492,6 +1526,9 @@ static int ssl_parse_server_key_exchange( ssl_context *ssl )
     int ret;
     const ssl_ciphersuite_t *ciphersuite_info = ssl->transform_negotiate->ciphersuite_info;
     unsigned char *p, *end;
+
+    usart_putstr("ssl_parse_server_key_exchange - Start");
+
 #if defined(POLARSSL_KEY_EXCHANGE_DHE_RSA_ENABLED) ||                       \
     defined(POLARSSL_KEY_EXCHANGE_ECDHE_RSA_ENABLED) ||                     \
     defined(POLARSSL_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED)
@@ -1824,6 +1861,8 @@ static int ssl_parse_certificate_request( ssl_context *ssl )
     size_t cert_type_len = 0, dn_len = 0;
     const ssl_ciphersuite_t *ciphersuite_info = ssl->transform_negotiate->ciphersuite_info;
 
+    usart_putstr("ssl_parse_certificate_request - Start");
+
     SSL_DEBUG_MSG( 2, ( "=> parse certificate request" ) );
 
     if( ciphersuite_info->key_exchange == POLARSSL_KEY_EXCHANGE_PSK ||
@@ -1970,6 +2009,8 @@ static int ssl_parse_server_hello_done( ssl_context *ssl )
 {
     int ret;
 
+    usart_putstr("ssl_parse_server_hello_done - Start");
+
     SSL_DEBUG_MSG( 2, ( "=> parse server hello done" ) );
 
     if( ssl->record_read == 0 )
@@ -2007,6 +2048,8 @@ static int ssl_write_client_key_exchange( ssl_context *ssl )
     int ret;
     size_t i, n;
     const ssl_ciphersuite_t *ciphersuite_info = ssl->transform_negotiate->ciphersuite_info;
+
+    usart_putstr("ssl_write_client_key_exchange - Start");
 
     SSL_DEBUG_MSG( 2, ( "=> write client key exchange" ) );
 
@@ -2256,6 +2299,8 @@ static int ssl_write_certificate_verify( ssl_context *ssl )
     md_type_t md_alg = POLARSSL_MD_NONE;
     unsigned int hashlen;
 
+    usart_putstr("ssl_write_certificate_verify - Start");
+
     SSL_DEBUG_MSG( 2, ( "=> write certificate verify" ) );
 
     if( ciphersuite_info->key_exchange == POLARSSL_KEY_EXCHANGE_PSK ||
@@ -2492,13 +2537,18 @@ int ssl_handshake_client_step( ssl_context *ssl )
 {
     int ret = 0;
 
+    usart_putstr("ssl_handshake_client_step - Start\n");
+
     if( ssl->state == SSL_HANDSHAKE_OVER )
         return( POLARSSL_ERR_SSL_BAD_INPUT_DATA );
 
     SSL_DEBUG_MSG( 2, ( "client state: %d", ssl->state ) );
 
     if( ( ret = ssl_flush_output( ssl ) ) != 0 )
-        return( ret );
+    {
+    	usart_putstr("ssl_flush_output - return( ret ) 1");
+    	return( ret );
+    }
 
     switch( ssl->state )
     {
@@ -2567,6 +2617,7 @@ int ssl_handshake_client_step( ssl_context *ssl )
            ret = ssl_write_finished( ssl );
            break;
 
+     usart_putstr("ssl_handshake_client_step - a lot of func..\n");
        /*
         *  <==   ( NewSessionTicket )
         *        ChangeCipherSpec
@@ -2599,6 +2650,7 @@ int ssl_handshake_client_step( ssl_context *ssl )
            return( POLARSSL_ERR_SSL_BAD_INPUT_DATA );
    }
 
+    usart_putstr("ssl_handshake_client_step - End\n");
     return( ret );
 }
 #endif

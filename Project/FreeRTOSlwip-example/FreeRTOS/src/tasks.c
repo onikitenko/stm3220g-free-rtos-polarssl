@@ -2510,4 +2510,13 @@ void getTaskName(char *source_func)
 	taskEXIT_CRITICAL();
 }
 
+char *getTaskNameInVar()
+{
+	char *tsk_name[100];
+
+	strcpy(tsk_name, pxCurrentTCB->pcTaskName);
+
+	return tsk_name;
+}
+
 

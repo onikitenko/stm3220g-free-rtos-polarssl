@@ -44,6 +44,7 @@
 #include "polarssl/error.h"
 #include "polarssl/certs.h"
 #include "../../FreeRTOS/inc/semphr.h"
+#include "../../FreeRTOS/inc/task.h"
 
 #if LWIP_TCP
 /* Private typedef -----------------------------------------------------------*/
@@ -69,7 +70,7 @@ xQueueHandle xLwIPQueue;
 #define GET_REQUEST "GET / HTTP/1.0\r\n\r\n"
 #define DEBUG_LEVEL 1
 
-struct polarclient es_my;
+struct polarclient *es_my;
 
 static void my_debug( void *ctx, int level, const char *str )
 {
@@ -126,7 +127,7 @@ err_t polarssl_init(void);
 void Delay(int d_num)
 {
 	unsigned int d_iter;
-	unsigned int i, j;
+	unsigned int i, j;http://pastebin.com/qMiNjQdS
 
 	for(i = 0; i <= d_num; i++)
 	{
@@ -142,18 +143,20 @@ void Delay(int d_num)
 int tcp_wrapped_write(struct tcp_pcb *tpcb, void *ctx, const unsigned char *buf, size_t len)
 {
 	struct polarclient *es;
-	struct polarclient *es_my;
+	//struct polarclient *es_my;
 	char *data = buf;
-	//xSemaphoreHandle xSem_Sent;
 
 	usart_putstr("tcp_wrapped_write - Func start\n");
 	es->pcb = tpcb;
+
+	//sprintf((char*)data, "TCP_polarclient sending tcp client message %d", (int)message_count);
 
 	/* allocate pbuf */
 	es->p_tx = pbuf_alloc(PBUF_TRANSPORT, strlen((char*)data) , PBUF_POOL);
 
 	if (es->p_tx)
 	{
+		usart_putstr("tcp_wrapped_write - we enter if (es->p_tx)\n");
 		/* copy data to pbuf */
 		pbuf_take(es->p_tx, (char*)data, strlen((char*)data));
 
@@ -161,7 +164,6 @@ int tcp_wrapped_write(struct tcp_pcb *tpcb, void *ctx, const unsigned char *buf,
 		tcp_arg(tpcb, es);
 
 		/* initialize LwIP tcp_recv callback function */
-		usart_putstr("tcp_recv is called from tcp_wrapped_write\n");
 		tcp_recv(tpcb, tcp_polarclient_recv);
 
 		/* initialize LwIP tcp_sent callback function */
@@ -174,16 +176,18 @@ int tcp_wrapped_write(struct tcp_pcb *tpcb, void *ctx, const unsigned char *buf,
 		tcp_polarclient_send(tpcb,es);
 
 		//TODO not only delay, but with check for es->state == ES_SENT
-			xSemaphoreTake( xSem_Sent , 2000 / portTICK_RATE_MS);
+//		while(es_my->state != ES_SENT)
+//		{
+//			Delay(2);
+//			usart_putstr("waiting for ES_SENT\n");
+//		}
+//		usart_putstr("ES_SENT - Done!\n");
+			//xSemaphoreTake( xSem_Sent , 2000 / portTICK_RATE_MS);
 	}
+		usart_putint("Num of bytes been sent: ", es->num_bytes_sent);
 		usart_putstr("tcp_wrapped_write - Func end\n");
 
-		char tmp_buf[50] = "";
-		sprintf(tmp_buf, "%d",  es->num_bytes_sent);
-		usart_putstr(tmp_buf);
-
-
-	    return es->num_bytes_sent;
+		return es->num_bytes_sent;
 }
 
 int tcp_wrapped_recv( void *ctx, unsigned char *buf, size_t len) {
@@ -199,12 +203,7 @@ int tcp_wrapped_recv( void *ctx, unsigned char *buf, size_t len) {
 	// tcp_recv(struct tcp_pcb *pcb, tcp_recv_fn recv);
 	int num_bytes = len;
 
-	char tmp_buf[50];
-
-	usart_putstr("Num bytes: ");
-	sprintf(tmp_buf, "%d",  len);
-	usart_putstr(tmp_buf);
-	usart_putstr(" b.\n");
+	usart_putint("Num of bytes been Recieved: ", num_bytes);
 
 	return num_bytes;
 }
@@ -231,6 +230,23 @@ err_t polarssl_init(void) {
     x509_crt_init( &cacert );
 
     usart_putstr( "\n  . Seeding the random number generator..." );
+
+//			time_t timer;
+//			struct tm y2k;
+//			double seconds;
+//			char tmp_buf2[100];
+//
+//			y2k.tm_hour = 0;   y2k.tm_min = 0; y2k.tm_sec = 0;
+//			y2k.tm_year = 0; y2k.tm_mon = 0; y2k.tm_mday = 0;
+//
+//			time(&timer);  /* get current time; same as: timer = time(NULL)  */
+//
+//			//seconds = difftime(timer,mktime(&y2k));
+//
+//			sprintf(tmp_buf2,"%d", timer);
+//			usart_putstr(tmp_buf2);
+//			usart_putstr (" seconds since January 1, 2000 in the current timezone\n");
+
 
     entropy_init( &entropy );
     usart_putstr( "\n  . Entropy done" );
@@ -334,6 +350,7 @@ err_t polarssl_init(void) {
          */
         usart_putstr( "  . Performing the SSL/TLS handshake...\n" );
 
+        //taskENTER_CRITICAL();
         while( ( ret = ssl_handshake( &ssl ) ) != 0 )
         {
             if( ret != POLARSSL_ERR_NET_WANT_READ && ret != POLARSSL_ERR_NET_WANT_WRITE )
@@ -345,6 +362,7 @@ err_t polarssl_init(void) {
                 goto exit;
             }
         }
+        //taskEXIT_CRITICAL();
 
         usart_putstr( " ok (ssl_handshake)\n" );
 
@@ -477,10 +495,12 @@ exit:
 void tcp_polarclient_connect(void)
 {
   struct ip_addr DestIPaddr;
-  struct polarclient *es_my;
+  //struct polarclient *es_my;
   err_t err;
+//  char *tsk_name = "";
 
-  getTaskName("tcp_polarclient_connect");
+//  xQueue1 = xQueueCreate( 1, sizeof( unsigned char ) );
+//    unsigned char item = 0;
 
   /* create new tcp pcb */
   polarclient_pcb = tcp_new();
@@ -494,6 +514,32 @@ void tcp_polarclient_connect(void)
     /* connect to destination address/port */
 
     err = tcp_connect(polarclient_pcb,&DestIPaddr,DEST_PORT,tcp_polarclient_connected);
+
+//    tsk_name = getTaskNameInVar();
+//
+//    if( strcmp(tsk_name, "LwIPTask") == 0 )
+//    {
+//    	usart_putstr("pxCurrentTCB->pcTaskName == LwIPTask\n");
+//        while(1)
+//                {
+//                	if(c_count == 0)
+//                	{
+//                    	usart_putstr("In While(1) with Queues\n");
+//            			if( xQueueReceive(xQueue1, &item, 500) )
+//            			{
+//            				usart_putstr("xQueue1 == 1 - no sleep. (Receive is done)\n");
+//            				break;
+//            			}
+//            			else
+//            			{
+//            				usart_putstr("xQueue1 == 0 - go to sleep some (For 500 ticks)\n");
+//            			}
+//                	}
+//                	else
+//                		break;
+//                }
+//    }
+
 
     if (err == ERR_OK)
     	usart_putstr("tcp_connect OK\n");
@@ -524,10 +570,10 @@ static err_t tcp_polarclient_connected(void *arg, struct tcp_pcb *tpcb, err_t er
 {
 	//TODO add semaphores
   struct polarclient *es = NULL;
-  struct polarclient *es_my;
 
   	  xQueue1 = xQueueCreate( 1, sizeof( unsigned char ) );
   unsigned char item = 0;
+  char *tsk_name = "";
 
   getTaskName("tcp_polarclient_connected");
   usart_putstr("tcp_polarclient_connected Func - Start\n");
@@ -544,7 +590,7 @@ static err_t tcp_polarclient_connected(void *arg, struct tcp_pcb *tpcb, err_t er
       es_my->state = ES_CONNECTED;
       es->pcb = tpcb;
       
-      sprintf((char*)data, "sending tcp client message %d", (int)message_count);
+      sprintf((char*)data, "TCP_polarclient sending tcp client message %d", (int)message_count);
         
       /* allocate pbuf */
       es->p_tx = pbuf_alloc(PBUF_TRANSPORT, strlen((char*)data) , PBUF_POOL);
@@ -558,7 +604,6 @@ static err_t tcp_polarclient_connected(void *arg, struct tcp_pcb *tpcb, err_t er
         tcp_arg(tpcb, es);
   
         /* initialize LwIP tcp_recv callback function */
-        usart_putstr("tcp_recv is called from tcp_polarclient_connected\n");
         tcp_recv(tpcb, tcp_polarclient_recv);
   
         /* initialize LwIP tcp_sent callback function */
@@ -570,35 +615,28 @@ static err_t tcp_polarclient_connected(void *arg, struct tcp_pcb *tpcb, err_t er
         /* send data */
         tcp_polarclient_send(tpcb,es);
 
-        getTaskName("before xQueue1");
 
-        char buf[50];
-            	sprintf(buf, "c_count = %d (Before While(1))\n", c_count );
-            	usart_putstr(buf);
+        //TODO find out and fix why tcp_polarclient_connected func. called 2 times straight one-by-one.
 
-        while(1)
+        tsk_name = getTaskNameInVar();
+
+        if( (strcmp(tsk_name, "LwIPTask")) == 0 )
         {
-        	if(c_count == 0)
-        	{
-            	usart_putstr("In While(1) with Queues\n");
-    			if( xQueueReceive(xQueue1, &item, 500) )
-    			{
-    				usart_putstr("xQueue1 == 1 - no sleep. (Receive is done)\n");
-    				break;
-    			}
-    			else
-    			{
-    				usart_putstr("xQueue1 == 0 - go to sleep some (For 500 ticks)\n");
-    			}
-        	}
-        	else
-        		break;
+        	usart_putstr("pxCurrentTCB->pcTaskName == LwIPTask\n");
+            while(1)
+                    {
+                        	usart_putstr("In While(1) with Queues\n");
+                			if( xQueueReceive(xQueue1, &item, 500) )
+                			{
+                				usart_putstr("xQueue1 == 1 - no sleep. (Receive is done)\n");
+                				break;
+                			}
+                			else
+                			{
+                				usart_putstr("xQueue1 == 0 - go to sleep some (For 500 ticks)\n");
+                			}
+                    }
         }
-                  	sprintf(buf, "c_count = %d (After While(1))\n", c_count );
-                  	usart_putstr(buf);
-        c_count++;
-                  	sprintf(buf, "c_count = %d (After c_count++)\n", c_count );
-                  	usart_putstr(buf);
 
         getTaskName("t.._p.._c.. - return ERR_OK");
         usart_putstr("tcp_polarclient_connected Func - return ERR_OK\n");
@@ -684,7 +722,7 @@ static err_t tcp_polarclient_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *
 
     //TODO free or not???? It seems we should free it
     pbuf_free(p);
-    usart_putstr("Call our wrapper callback");
+    usart_putstr("Call our wrapper callback\n");
     //tcp_polarclient_connection_close(tpcb, es);
     ret_err = ERR_OK;
   }
@@ -807,23 +845,28 @@ static err_t tcp_polarclient_poll(void *arg, struct tcp_pcb *tpcb)
 static err_t tcp_polarclient_sent(void *arg, struct tcp_pcb *tpcb, u16_t len)
 {
   struct polarclient *es;
-  struct polarclient *es_my;
-  //xSemaphoreHandle xSem_Sent;
+  //struct polarclient *es_my;
+
+  usart_putstr("----======tcp_polarclient_sent - Start\n");
 
   LWIP_UNUSED_ARG(len);
 
   es = (struct polarclient *)arg;
-  es_my->num_bytes_sent = len;
   
+  es->num_bytes_sent = len;
+
+  usart_putint("Nym of butes FROM sent func.: ", len);
+
   if(es->p_tx != NULL)
   {
     /* still got pbufs to send */
     tcp_polarclient_send(tpcb, es);
   }
 
+  usart_putstr("es_my->state - Stated\n");
   es_my->state = ES_SENT;
 
-  xSemaphoreGive( xSem_Sent );
+  //xSemaphoreGive( xSem_Sent );
 
   return ERR_OK;
 }

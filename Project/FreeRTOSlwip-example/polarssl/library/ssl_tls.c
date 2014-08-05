@@ -1937,6 +1937,8 @@ int ssl_flush_output( ssl_context *ssl )
     int ret;
     unsigned char *buf;
 
+    usart_putstr("ssl_flush_output - Start\n");
+
     SSL_DEBUG_MSG( 2, ( "=> flush output" ) );
 
     while( ssl->out_left > 0 )
@@ -1957,6 +1959,7 @@ int ssl_flush_output( ssl_context *ssl )
 
     SSL_DEBUG_MSG( 2, ( "<= flush output" ) );
 
+    usart_putstr("ssl_flush_output - End");
     return( 0 );
 }
 
@@ -1968,6 +1971,11 @@ int ssl_write_record( ssl_context *ssl )
     int ret, done = 0;
     size_t len = ssl->out_msglen;
 
+    if( len == 0 )
+    	usart_putstr("len == 0\n");
+
+    usart_putstr("ssl_write_record - start\n");
+
     SSL_DEBUG_MSG( 2, ( "=> write record" ) );
 
     if( ssl->out_msgtype == SSL_MSG_HANDSHAKE )
@@ -1977,16 +1985,22 @@ int ssl_write_record( ssl_context *ssl )
         ssl->out_msg[3] = (unsigned char)( ( len - 4 )       );
 
         if( ssl->out_msg[0] != SSL_HS_HELLO_REQUEST )
-            ssl->handshake->update_checksum( ssl, ssl->out_msg, len );
+        {
+        	usart_putstr("ssl_write_record - update_checksum\n");
+        	ssl->handshake->update_checksum( ssl, ssl->out_msg, len );
+        }
     }
 
+
 #if defined(POLARSSL_ZLIB_SUPPORT)
+	usart_putstr("ssl_write_record - defined(POLARSSL_ZLIB_SUPPORT)\n");
     if( ssl->transform_out != NULL &&
         ssl->session_out->compression == SSL_COMPRESS_DEFLATE )
     {
         if( ( ret = ssl_compress_buf( ssl ) ) != 0 )
         {
             SSL_DEBUG_RET( 1, "ssl_compress_buf", ret );
+            usart_putstr("ssl_write_record - return 1\n");
             return( ret );
         }
 
@@ -1995,6 +2009,7 @@ int ssl_write_record( ssl_context *ssl )
 #endif /*POLARSSL_ZLIB_SUPPORT */
 
 #if defined(POLARSSL_SSL_HW_RECORD_ACCEL)
+    usart_putstr("ssl_write_record - defined(POLARSSL_SSL_HW_RECORD_ACCEL)\n");
     if( ssl_hw_record_write != NULL)
     {
         SSL_DEBUG_MSG( 2, ( "going for ssl_hw_record_write()" ) );
@@ -2003,6 +2018,7 @@ int ssl_write_record( ssl_context *ssl )
         if( ret != 0 && ret != POLARSSL_ERR_SSL_HW_ACCEL_FALLTHROUGH )
         {
             SSL_DEBUG_RET( 1, "ssl_hw_record_write", ret );
+            usart_putstr("ssl_write_record - return 2\n");
             return POLARSSL_ERR_SSL_HW_ACCEL_FAILED;
         }
 
@@ -2020,15 +2036,18 @@ int ssl_write_record( ssl_context *ssl )
 
         if( ssl->transform_out != NULL )
         {
+        	usart_putstr("ssl_write_record - ssl->transform_out != NULL\n");
             if( ( ret = ssl_encrypt_buf( ssl ) ) != 0 )
             {
                 SSL_DEBUG_RET( 1, "ssl_encrypt_buf", ret );
+                usart_putstr("ssl_write_record - return 3\n");
                 return( ret );
             }
 
             len = ssl->out_msglen;
             ssl->out_hdr[3] = (unsigned char)( len >> 8 );
             ssl->out_hdr[4] = (unsigned char)( len      );
+            usart_putstr("ssl_write_record - ssl->transform_out != NULL - End\n");
         }
 
         ssl->out_left = 5 + ssl->out_msglen;
@@ -2042,14 +2061,17 @@ int ssl_write_record( ssl_context *ssl )
                        ssl->out_hdr, 5 + ssl->out_msglen );
     }
 
+
     if( ( ret = ssl_flush_output( ssl ) ) != 0 )
     {
         SSL_DEBUG_RET( 1, "ssl_flush_output", ret );
+        usart_putstr("ssl_write_record - return 4\n");
         return( ret );
     }
 
     SSL_DEBUG_MSG( 2, ( "<= write record" ) );
 
+    usart_putstr("ssl_write_record - return 0 --=====--\n");
     return( 0 );
 }
 
@@ -2415,6 +2437,8 @@ int ssl_write_certificate( ssl_context *ssl )
     const x509_crt *crt;
     const ssl_ciphersuite_t *ciphersuite_info = ssl->transform_negotiate->ciphersuite_info;
 
+    usart_putstr("ssl_write_certificate - Start");
+
     SSL_DEBUG_MSG( 2, ( "=> write certificate" ) );
 
     if( ciphersuite_info->key_exchange == POLARSSL_KEY_EXCHANGE_PSK ||
@@ -2524,6 +2548,8 @@ int ssl_parse_certificate( ssl_context *ssl )
     int ret = POLARSSL_ERR_SSL_FEATURE_UNAVAILABLE;
     size_t i, n;
     const ssl_ciphersuite_t *ciphersuite_info = ssl->transform_negotiate->ciphersuite_info;
+
+    usart_putstr("ssl_parse_certificate - Start");
 
     SSL_DEBUG_MSG( 2, ( "=> parse certificate" ) );
 
@@ -2765,6 +2791,8 @@ int ssl_write_change_cipher_spec( ssl_context *ssl )
 {
     int ret;
 
+    usart_putstr("ssl_write_change_cipher_spec - Start");
+
     SSL_DEBUG_MSG( 2, ( "=> write change cipher spec" ) );
 
     ssl->out_msgtype = SSL_MSG_CHANGE_CIPHER_SPEC;
@@ -2823,18 +2851,27 @@ void ssl_optimize_checksum( ssl_context *ssl,
 #if defined(POLARSSL_SSL_PROTO_SSL3) || defined(POLARSSL_SSL_PROTO_TLS1) || \
     defined(POLARSSL_SSL_PROTO_TLS1_1)
     if( ssl->minor_ver < SSL_MINOR_VERSION_3 )
-        ssl->handshake->update_checksum = ssl_update_checksum_md5sha1;
+    {
+    	usart_putstr("ssl_update_checksum_md5sha1 - Before Func.\n");
+    	ssl->handshake->update_checksum = ssl_update_checksum_md5sha1;
+    }
     else
 #endif
 #if defined(POLARSSL_SSL_PROTO_TLS1_2)
 #if defined(POLARSSL_SHA512_C)
     if( ciphersuite_info->mac == POLARSSL_MD_SHA384 )
-        ssl->handshake->update_checksum = ssl_update_checksum_sha384;
+    {
+    	usart_putstr("ssl_update_checksum_sha384 - Before Func.\n");
+    	ssl->handshake->update_checksum = ssl_update_checksum_sha384;
+    }
     else
 #endif
 #if defined(POLARSSL_SHA256_C)
     if( ciphersuite_info->mac != POLARSSL_MD_SHA384 )
-        ssl->handshake->update_checksum = ssl_update_checksum_sha256;
+    {
+    	usart_putstr("ssl_update_checksum_sha256 - Before Func.\n");
+    	ssl->handshake->update_checksum = ssl_update_checksum_sha256;
+    }
     else
 #endif
 #endif /* POLARSSL_SSL_PROTO_TLS1_2 */
@@ -2845,6 +2882,7 @@ void ssl_optimize_checksum( ssl_context *ssl,
 static void ssl_update_checksum_start( ssl_context *ssl,
                                        const unsigned char *buf, size_t len )
 {
+	usart_putstr("ssl_update_checksum_start - Start\n");
 #if defined(POLARSSL_SSL_PROTO_SSL3) || defined(POLARSSL_SSL_PROTO_TLS1) || \
     defined(POLARSSL_SSL_PROTO_TLS1_1)
      md5_update( &ssl->handshake->fin_md5 , buf, len );
@@ -2858,6 +2896,7 @@ static void ssl_update_checksum_start( ssl_context *ssl,
     sha512_update( &ssl->handshake->fin_sha512, buf, len );
 #endif
 #endif /* POLARSSL_SSL_PROTO_TLS1_2 */
+    usart_putstr("ssl_update_checksum_start - End\n");
 }
 
 #if defined(POLARSSL_SSL_PROTO_SSL3) || defined(POLARSSL_SSL_PROTO_TLS1) || \
@@ -2865,8 +2904,10 @@ static void ssl_update_checksum_start( ssl_context *ssl,
 static void ssl_update_checksum_md5sha1( ssl_context *ssl,
                                          const unsigned char *buf, size_t len )
 {
+	usart_putstr("ssl_update_checksum_md5sha1 - Start\n");
      md5_update( &ssl->handshake->fin_md5 , buf, len );
     sha1_update( &ssl->handshake->fin_sha1, buf, len );
+    usart_putstr("ssl_update_checksum_md5sha1 - End\n");
 }
 #endif
 
@@ -2875,7 +2916,9 @@ static void ssl_update_checksum_md5sha1( ssl_context *ssl,
 static void ssl_update_checksum_sha256( ssl_context *ssl,
                                         const unsigned char *buf, size_t len )
 {
+	usart_putstr("ssl_update_checksum_sha256 - Start\n");
     sha256_update( &ssl->handshake->fin_sha256, buf, len );
+    usart_putstr("ssl_update_checksum_sha256 - End\n");
 }
 #endif
 
@@ -2883,7 +2926,9 @@ static void ssl_update_checksum_sha256( ssl_context *ssl,
 static void ssl_update_checksum_sha384( ssl_context *ssl,
                                         const unsigned char *buf, size_t len )
 {
+	usart_putstr("ssl_update_checksum_sha384 - Start\n");
     sha512_update( &ssl->handshake->fin_sha512, buf, len );
+	usart_putstr("ssl_update_checksum_sha384 - End\n");
 }
 #endif
 #endif /* POLARSSL_SSL_PROTO_TLS1_2 */
@@ -3177,6 +3222,8 @@ int ssl_write_finished( ssl_context *ssl )
 {
     int ret, hash_len;
 
+    usart_putstr("ssl_write_finished - Start");
+
     SSL_DEBUG_MSG( 2, ( "=> write finished" ) );
 
     /*
@@ -3390,6 +3437,7 @@ static int ssl_handshake_init( ssl_context *ssl )
 #endif
 #endif /* POLARSSL_SSL_PROTO_TLS1_2 */
 
+    usart_putstr("ssl_update_checksum_start - Before Func.\n");
     ssl->handshake->update_checksum = ssl_update_checksum_start;
     ssl->handshake->sig_alg = SSL_HASH_SHA1;
 
@@ -3446,6 +3494,9 @@ int ssl_init( ssl_context *ssl )
     /*
      * Prepare base structures
      */
+
+    usart_putint("polarssl_malloc len =", len);
+
     ssl->in_ctr = (unsigned char *) polarssl_malloc( len );
     ssl->in_hdr = ssl->in_ctr +  8;
     ssl->in_iv  = ssl->in_ctr + 13;
@@ -3455,7 +3506,7 @@ int ssl_init( ssl_context *ssl )
     {
     	usart_putstr("ssl_init - ssl->in_crt == NULL\n");
         SSL_DEBUG_MSG( 1, ( "malloc(%d bytes) failed", len ) );
-        usart_putstr("ssl_init - returning 2\n");
+        usart_putstr("ssl_init - returning POLARSSL_ERR_SSL_MALLOC_FAILED\n");
         return( POLARSSL_ERR_SSL_MALLOC_FAILED );
     }
 
@@ -4141,6 +4192,8 @@ int ssl_handshake_step( ssl_context *ssl )
 {
     int ret = POLARSSL_ERR_SSL_FEATURE_UNAVAILABLE;
 
+    usart_putstr("ssl_handshake_step - Start\n");
+
 #if defined(POLARSSL_SSL_CLI_C)
     if( ssl->endpoint == SSL_IS_CLIENT )
         ret = ssl_handshake_client_step( ssl );
@@ -4151,6 +4204,7 @@ int ssl_handshake_step( ssl_context *ssl )
         ret = ssl_handshake_server_step( ssl );
 #endif
 
+    usart_putstr("ssl_handshake_step - End\n");
     return( ret );
 }
 
@@ -4160,6 +4214,8 @@ int ssl_handshake_step( ssl_context *ssl )
 int ssl_handshake( ssl_context *ssl )
 {
     int ret = 0;
+
+    usart_putstr("ssl_handshake - Start\n");
 
     SSL_DEBUG_MSG( 2, ( "=> handshake" ) );
 
@@ -4173,6 +4229,7 @@ int ssl_handshake( ssl_context *ssl )
 
     SSL_DEBUG_MSG( 2, ( "<= handshake" ) );
 
+    usart_putstr("ssl_handshake - End\n");
     return( ret );
 }
 

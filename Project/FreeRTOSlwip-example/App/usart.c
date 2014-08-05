@@ -26,7 +26,7 @@ void usart_putchar(char t)
 	while (__HAL_UART_GET_FLAG(&UartHandle, UART_FLAG_TXE) == RESET);
 		HAL_UART_Transmit(&UartHandle, &t, size_to_transmit, 2000); // Timeout was 100, size to trans. was 1
 		taskEXIT_CRITICAL();
-};
+}
 
 void usart_putstr(char *str)
 {
@@ -37,4 +37,14 @@ void usart_putstr(char *str)
 	} while(*str!='\0');
 
 	taskEXIT_CRITICAL();
+}
+
+void usart_putint(char *str1,int num)
+{
+	unsigned char tmp_buf[150];
+
+	sprintf(tmp_buf,"%s ", str1);
+	usart_putstr(tmp_buf);
+	sprintf(tmp_buf,"%d\n", num);
+	usart_putstr(tmp_buf);
 }
